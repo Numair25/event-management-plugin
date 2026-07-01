@@ -18,6 +18,7 @@ class EMP_GF_Addon extends GFFeedAddOn {
 	protected $_full_path = __FILE__;
 	protected $_title = 'Event Management & Check-In';
 	protected $_short_title = 'Event Management';
+	protected $_async_feed_processing = false;
 
 	private static $_instance = null;
 
@@ -235,6 +236,8 @@ class EMP_GF_Addon extends GFFeedAddOn {
 				GFAPI::add_note( $entry['id'], 0, 'Event Management', sprintf( 'Created Attendee ID: %d with status: %s', $attendee_id, $status ) );
 			}
 		}
+		
+		return $entry;
 	}
 
 	private function process_photo( $photo_url, $entry_id ) {
