@@ -134,6 +134,15 @@ class EMP_GF_Integration {
 			return; // Not linked to any event directly
 		}
 
+		// Bail if there are active Gravity Forms Feeds handling this form
+		if ( class_exists( 'EMP_GF_Addon' ) ) {
+			$addon = EMP_GF_Addon::get_instance();
+			$feeds = $addon->get_active_feeds( $form['id'] );
+			if ( ! empty( $feeds ) ) {
+				return;
+			}
+		}
+
 		// Also get the first available ticket type for this event as default
 		$ticket_type_id = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}emp_ticket_types WHERE event_id = %d ORDER BY price ASC LIMIT 1", $event_id ) );
 		if ( ! $ticket_type_id ) $ticket_type_id = 0;
