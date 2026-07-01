@@ -19,6 +19,7 @@ class EMP_GF_Addon extends GFFeedAddOn {
 	protected $_title = 'Event Management & Check-In';
 	protected $_short_title = 'Event Management';
 	protected $_async_feed_processing = false;
+	protected $_bypass_feed_delay = true;
 
 	private static $_instance = null;
 
