@@ -29,6 +29,52 @@ class EMP_GF_Integration {
 		if ( get_option( 'emp_gf_force_inr', 0 ) ) {
 			add_filter( 'gform_currency', array( $this, 'set_inr_currency' ) );
 		}
+
+		// Duplicate validation
+		add_filter( 'gform_validation', array( $this, 'validate_duplicate_attendee' ) );
+	}
+
+	public function validate_duplicate_attendee( $validation_result ) {
+		$form = $validation_result['form'];
+		
+		global $wpdb;
+		$event_id = $wpdb->get_var( $wpdb->prepare( "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_emp_gf_form_id' AND meta_value = %d LIMIT 1", $form['id'] ) );
+		
+		if ( ! $event_id && class_exists( 'EMP_GF_Addon' ) ) {
+			$addon = EMP_GF_Addon::get_instance();
+			$feeds = $addon->get_active_feeds( $form['id'] );
+			if ( ! empty( $feeds ) ) {
+				$event_id = rgar( $feeds[0]['meta'], 'event_id' );
+			}
+		}
+
+		if ( ! $event_id ) {
+			return $validation_result;
+		}
+
+		$email_field = null;
+		$email_value = '';
+		foreach ( $form['fields'] as &$field ) {
+			if ( $field->type === 'email' ) {
+				$email_field = $field;
+				$email_value = rgpost( 'input_' . str_replace( '.', '_', $field->id ) );
+				break;
+			}
+		}
+
+		if ( $email_field && ! empty( $email_value ) ) {
+			$table_attendees = $wpdb->prefix . 'emp_attendees';
+			$exists = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $table_attendees WHERE event_id = %d AND email = %s LIMIT 1", $event_id, $email_value ) );
+
+			if ( $exists ) {
+				$validation_result['is_valid'] = false;
+				$email_field->failed_validation = true;
+				$email_field->validation_message = __( 'This email is already registered for this event.', 'event-management-plugin' );
+			}
+		}
+
+		$validation_result['form'] = $form;
+		return $validation_result;
 	}
 
 	public function add_inr_currency( $currencies ) {
