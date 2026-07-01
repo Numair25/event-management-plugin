@@ -29,6 +29,10 @@ class EMP_Badges_Admin {
 							'field' => sanitize_text_field( $field_val ),
 							'label' => sanitize_text_field( $_POST['text_label'][$key] ),
 							'size'  => floatval( $_POST['text_size'][$key] ),
+							'x'     => floatval( $_POST['text_x'][$key] ),
+							'y'     => floatval( $_POST['text_y'][$key] ),
+							'w'     => floatval( $_POST['text_w'][$key] ),
+							'h'     => floatval( $_POST['text_h'][$key] ),
 						);
 					}
 				}
@@ -36,9 +40,10 @@ class EMP_Badges_Admin {
 
 			$design_config = array(
 				'bg_image'   => esc_url_raw( $_POST['bg_image'] ),
-				'event_logo_width' => floatval( $_POST['event_logo_width'] ),
-				'bg_image_width' => floatval( $_POST['bg_image_width'] ),
-				'qr_size'    => floatval( $_POST['qr_size'] ),
+				'qr_x'       => floatval( $_POST['qr_x'] ),
+				'qr_y'       => floatval( $_POST['qr_y'] ),
+				'qr_w'       => floatval( $_POST['qr_w'] ),
+				'qr_h'       => floatval( $_POST['qr_h'] ),
 				'text_lines' => $text_lines,
 				'gf_form_id' => isset( $_POST['gf_form_id'] ) ? intval( $_POST['gf_form_id'] ) : 0,
 			);
@@ -65,7 +70,7 @@ class EMP_Badges_Admin {
 		
 		echo '<div class="wrap">';
 		echo '<h1 class="wp-heading-inline">' . __( 'Badge Designs', 'event-management-plugin' ) . '</h1>';
-		echo '<p>' . __( 'Configure badge layouts per ticket type. Artwork should be uploaded at the correct physical dimensions (e.g., A6).', 'event-management-plugin' ) . '</p>';
+		echo '<p>' . __( 'Configure badge layouts per ticket type. Use the new visual drag and drop builder to place your fields exactly where you want them on your background template.', 'event-management-plugin' ) . '</p>';
 		echo '<hr class="wp-header-end">';
 		
 		echo '<table class="wp-list-table widefat fixed striped">';
@@ -100,21 +105,33 @@ class EMP_Badges_Admin {
 		$ticket = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_name WHERE id = %d", $ticket_id ) );
 		$event_title = get_the_title( $ticket->event_id );
 		
+		$badge_width = get_post_meta( $ticket->event_id, '_emp_badge_width', true ) ?: 100;
+		$badge_height = get_post_meta( $ticket->event_id, '_emp_badge_height', true ) ?: 150;
+
 		$design = get_option( 'emp_badge_design_' . $ticket_id );
 		if ( ! $design ) {
 			$design = array(
 				'bg_image'   => '',
-				'event_logo_width' => 35,
-				'bg_image_width' => 35,
-				'qr_size'    => 30,
+				'qr_x'       => 10,
+				'qr_y'       => $badge_height - 40,
+				'qr_w'       => 30,
+				'qr_h'       => 30,
 				'text_lines' => array()
 			);
 		} else {
-			if ( ! isset( $design['event_logo_width'] ) ) $design['event_logo_width'] = isset($design['event_logo_size']) ? $design['event_logo_size'] : 35;
-			if ( ! isset( $design['bg_image_width'] ) ) $design['bg_image_width'] = isset($design['bg_image_size']) ? $design['bg_image_size'] : 35;
+			// Backwards compatibility for old config
+			if ( ! isset( $design['qr_x'] ) ) $design['qr_x'] = 10;
+			if ( ! isset( $design['qr_y'] ) ) $design['qr_y'] = $badge_height - 40;
+			if ( ! isset( $design['qr_w'] ) ) $design['qr_w'] = isset($design['qr_size']) ? $design['qr_size'] : 30;
+			if ( ! isset( $design['qr_h'] ) ) $design['qr_h'] = isset($design['qr_size']) ? $design['qr_size'] : 30;
 		}
 		
 		wp_enqueue_media();
+		wp_enqueue_script( 'jquery-ui-draggable' );
+		wp_enqueue_script( 'jquery-ui-resizable' );
+		// Need jQuery UI CSS for resizable handles
+		wp_enqueue_style( 'jquery-ui-css', 'https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css' );
+
 		$gf_form_id = $override_gf_id ? $override_gf_id : (isset( $design['gf_form_id'] ) && $design['gf_form_id'] ? intval( $design['gf_form_id'] ) : get_post_meta( $ticket->event_id, '_emp_gf_form_id', true ));
 		
 		$field_options = array();
@@ -133,21 +150,70 @@ class EMP_Badges_Admin {
 		if ( isset( $design['text_lines'] ) && is_array( $design['text_lines'] ) ) {
 			foreach ( $design['text_lines'] as $t ) {
 				if ( ! empty( $t['field'] ) ) {
+					// Backwards compat for coordinates
+					if ( ! isset($t['x']) ) $t['x'] = 10;
+					if ( ! isset($t['y']) ) $t['y'] = 10;
+					if ( ! isset($t['w']) ) $t['w'] = 50;
+					if ( ! isset($t['h']) ) $t['h'] = 10;
 					$saved_fields[ $t['field'] ] = $t;
 				}
 			}
 		}
-		
-		$event_thumb_id = get_post_thumbnail_id( $ticket->event_id );
-		$event_thumb_url = $event_thumb_id ? wp_get_attachment_image_url( $event_thumb_id, 'full' ) : '';
 
 		?>
+		<style>
+			#live-preview-box {
+				width: 100%;
+				aspect-ratio: <?php echo floatval($badge_width); ?>/<?php echo floatval($badge_height); ?>;
+				background-color: #fff;
+				background-size: 100% 100%;
+				background-position: center;
+				background-repeat: no-repeat;
+				border: 1px solid #ccc;
+				box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+				position: relative;
+				overflow: hidden;
+				font-family: sans-serif;
+			}
+			.draggable-element {
+				position: absolute;
+				border: 1px dashed #0073aa;
+				background: rgba(255, 255, 255, 0.7);
+				cursor: move;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				text-align: center;
+				box-sizing: border-box;
+				overflow: hidden;
+				font-weight: bold;
+				color: #333;
+			}
+			.draggable-element:hover {
+				border: 2px dashed #0073aa;
+			}
+			.ui-resizable-handle {
+				width: 10px;
+				height: 10px;
+				background-color: #0073aa;
+				border: 1px solid #fff;
+			}
+			.ui-resizable-se {
+				right: -5px;
+				bottom: -5px;
+			}
+			.draggable-element[data-type="qr"] {
+				background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>');
+				background-size: cover;
+				background-color: rgba(255,255,255,0.9);
+			}
+		</style>
 		<div class="wrap">
 			<h1><?php printf( __( 'Edit Badge Design: %s - %s', 'event-management-plugin' ), $event_title, $ticket->name ); ?></h1>
 			<a href="?post_type=emp_event&page=emp-badges">&laquo; Back to List</a>
 			
 			<div style="display: flex; gap: 30px; margin-top: 20px;">
-				<div style="flex: 1;">
+				<div style="flex: 1; max-width: 600px;">
 					<form id="badge-design-form" method="post" action="?post_type=emp_event&page=emp-badges&action=edit&ticket_id=<?php echo $ticket_id; ?>">
 						<?php wp_nonce_field( 'save_badge_design' ); ?>
 						<input type="hidden" name="emp_save_badge_design" value="1" />
@@ -175,35 +241,30 @@ class EMP_Badges_Admin {
 								</td>
 							</tr>
 							<tr>
-								<th><label><?php _e( 'Event Image (Top Left)', 'event-management-plugin' ); ?></label></th>
+								<th><label><?php _e( 'Badge Background Image', 'event-management-plugin' ); ?></label></th>
 								<td>
-									<p class="description">Automatically uses Event's Featured Image.</p>
-									<input type="hidden" id="event_thumb_url" value="<?php echo esc_url($event_thumb_url); ?>" />
-									Width (mm): <input type="number" step="0.1" id="event_logo_width" name="event_logo_width" value="<?php echo esc_attr( $design['event_logo_width'] ); ?>" style="width: 70px;" class="live-update" />
+									<p class="description">Upload a template design (e.g. 100x150mm at 300dpi). It will fill the entire badge.</p>
+									<input type="text" id="bg_image" name="bg_image" value="<?php echo esc_attr( $design['bg_image'] ); ?>" class="regular-text" />
+									<input type="button" class="button" id="upload_bg_btn" value="Select Media" />
 								</td>
 							</tr>
 							<tr>
-								<th><label><?php _e( 'Badge Image (Top Right)', 'event-management-plugin' ); ?></label></th>
-								<td>
-									<input type="text" id="bg_image" name="bg_image" value="<?php echo esc_attr( $design['bg_image'] ); ?>" class="regular-text live-update" />
-									<input type="button" class="button" id="upload_bg_btn" value="Select Media" /><br><br>
-									Width (mm): <input type="number" step="0.1" id="bg_image_width" name="bg_image_width" value="<?php echo esc_attr( $design['bg_image_width'] ); ?>" style="width: 70px;" class="live-update" />
-								</td>
+								<th colspan="2">
+									<h3 style="margin-bottom:0;">QR Code (Drag to position)</h3>
+									<p class="description">Drag and resize the QR code over the blank space on your template.</p>
+									<!-- QR Coordinates -->
+									<input type="hidden" id="qr_x" name="qr_x" value="<?php echo esc_attr( $design['qr_x'] ); ?>" />
+									<input type="hidden" id="qr_y" name="qr_y" value="<?php echo esc_attr( $design['qr_y'] ); ?>" />
+									<input type="hidden" id="qr_w" name="qr_w" value="<?php echo esc_attr( $design['qr_w'] ); ?>" />
+									<input type="hidden" id="qr_h" name="qr_h" value="<?php echo esc_attr( $design['qr_h'] ); ?>" />
+								</th>
 							</tr>
-							<tr>
-								<th><label><?php _e( 'QR Code Settings', 'event-management-plugin' ); ?></label></th>
-								<td>
-									Size (mm): <input type="number" step="0.1" id="qr_size" name="qr_size" value="<?php echo esc_attr( $design['qr_size'] ); ?>" style="width: 70px;" class="live-update" />
-								</td>
-							</tr>
-							
 							<tr>
 								<th colspan="2">
 									<h3 style="margin-bottom:0;">Dynamic Text Fields</h3>
-									<p class="description">Select which fields to print. Layout is automatic.</p>
+									<p class="description">Check a box to add it to the canvas. Drag to position and resize.</p>
 								</th>
 							</tr>
-							
 							<tr>
 								<td colspan="2" style="padding: 0;">
 									<table class="wp-list-table widefat fixed striped" style="margin-top: 10px;">
@@ -211,7 +272,6 @@ class EMP_Badges_Admin {
 											<tr>
 												<th style="width: 50px;">Show</th>
 												<th>Field Name</th>
-												<th style="width: 100px;">Size (pt)</th>
 											</tr>
 										</thead>
 										<tbody>
@@ -220,8 +280,11 @@ class EMP_Badges_Admin {
 											foreach ( $field_options as $val => $label ) : 
 												$is_enabled = isset( $saved_fields[$val] );
 												$size = $is_enabled ? $saved_fields[$val]['size'] : 12;
+												$x = $is_enabled ? $saved_fields[$val]['x'] : 10;
+												$y = $is_enabled ? $saved_fields[$val]['y'] : 10 + ($index * 15);
+												$w = $is_enabled ? $saved_fields[$val]['w'] : 80;
+												$h = $is_enabled ? $saved_fields[$val]['h'] : 10;
 												
-												// If they just loaded a new form, or if it's completely empty, default to checking them so they appear in Live Preview
 												if ( $override_gf_id || ( ! $is_enabled && empty( $saved_fields ) ) ) {
 													$is_enabled = true;
 													if ( $index == 0 ) $size = 16;
@@ -229,12 +292,17 @@ class EMP_Badges_Admin {
 											?>
 											<tr>
 												<td>
-													<input type="checkbox" name="text_enabled[<?php echo $index; ?>]" value="1" class="live-update live-toggle" data-label="<?php echo esc_attr( $label ); ?>" <?php checked( $is_enabled ); ?> />
+													<input type="checkbox" name="text_enabled[<?php echo $index; ?>]" value="1" class="field-toggle" data-index="<?php echo $index; ?>" data-label="<?php echo esc_attr( $label ); ?>" <?php checked( $is_enabled ); ?> />
 													<input type="hidden" name="text_field[<?php echo $index; ?>]" value="<?php echo esc_attr( $val ); ?>" />
 													<input type="hidden" name="text_label[<?php echo $index; ?>]" value="<?php echo esc_attr( $label ); ?>" />
+													<!-- Hidden Coordinate Inputs -->
+													<input type="hidden" id="text_size_<?php echo $index; ?>" name="text_size[<?php echo $index; ?>]" value="<?php echo esc_attr( $size ); ?>" />
+													<input type="hidden" id="text_x_<?php echo $index; ?>" name="text_x[<?php echo $index; ?>]" value="<?php echo esc_attr( $x ); ?>" />
+													<input type="hidden" id="text_y_<?php echo $index; ?>" name="text_y[<?php echo $index; ?>]" value="<?php echo esc_attr( $y ); ?>" />
+													<input type="hidden" id="text_w_<?php echo $index; ?>" name="text_w[<?php echo $index; ?>]" value="<?php echo esc_attr( $w ); ?>" />
+													<input type="hidden" id="text_h_<?php echo $index; ?>" name="text_h[<?php echo $index; ?>]" value="<?php echo esc_attr( $h ); ?>" />
 												</td>
 												<td><strong><?php echo esc_html( $label ); ?></strong></td>
-												<td><input type="number" step="0.1" name="text_size[<?php echo $index; ?>]" value="<?php echo esc_attr( $size ); ?>" style="width: 70px;" class="live-update live-size" /></td>
 											</tr>
 											<?php 
 												$index++;
@@ -246,32 +314,36 @@ class EMP_Badges_Admin {
 							</tr>
 							
 						</table>
+						<br>
 						<?php submit_button( __( 'Save Design', 'event-management-plugin' ) ); ?>
 					</form>
 				</div>
 				
-				<div style="flex: 1; max-width: 400px;">
-					<h3>Live Preview</h3>
-					<div id="live-preview-box" style="width: 100%; aspect-ratio: 2/3; background: #fff; border: 1px solid #ccc; box-shadow: 0 4px 8px rgba(0,0,0,0.1); position: relative; overflow: hidden; padding: 20px; box-sizing: border-box; font-family: sans-serif;">
-						<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 10px; border: none;">
-							<tr>
-								<td align="left" valign="top" id="preview-event-logo" style="border: none;"></td>
-								<td align="right" valign="top" id="preview-badge-logo" style="border: none;"></td>
-							</tr>
-						</table>
-						<hr style="border: 0; border-top: 2px solid #eee; margin: 15px 0;">
-						<div id="preview-dynamic-fields" style="display: flex; flex-direction: column; gap: 10px;">
-							<!-- Dynamic Fields render here -->
-						</div>
-						<div style="position: absolute; bottom: 20px; left: 0; right: 0; text-align: center;">
-							<div id="preview-qr-code" style="display: inline-block; background: #eee;"></div>
-						</div>
+				<div style="flex: 1; max-width: 500px;">
+					<h3>Visual Drag & Drop Designer</h3>
+					<p>Dimensions: <?php echo floatval($badge_width); ?>mm x <?php echo floatval($badge_height); ?>mm</p>
+					
+					<div id="live-preview-box">
+						<!-- Background image set via JS -->
+						<div id="element-qr" class="draggable-element" data-type="qr" style="display:none;"></div>
+						<!-- Text elements injected here -->
 					</div>
 				</div>
 			</div>
 		</div>
+		
 		<script>
 		jQuery(document).ready(function($){
+			
+			var badgeWidthMm = <?php echo floatval($badge_width); ?>;
+			var badgeHeightMm = <?php echo floatval($badge_height); ?>;
+			
+			function getScale() {
+				var previewWidth = $('#live-preview-box').width();
+				return previewWidth / badgeWidthMm; // pixels per mm
+			}
+
+			// Background Image Upload
 			$('#upload_bg_btn').click(function(e) {
 				e.preventDefault();
 				var image_frame;
@@ -283,51 +355,161 @@ class EMP_Badges_Admin {
 				});
 				image_frame.open();
 			});
-
-			function updatePreview() {
-				var previewWidth = $('#live-preview-box').width();
-				// Base scaling (assume 100mm = 100% width of the box)
-				// So 1mm = (previewWidth / 100) px
-
-				var eventThumbUrl = $('#event_thumb_url').val();
-				var eventLogoWidth = $('#event_logo_width').val();
-				var eventLogoPx = (eventLogoWidth / 100) * previewWidth;
-				if (eventThumbUrl) {
-					$('#preview-event-logo').html('<img src="' + eventThumbUrl + '" style="width: ' + eventLogoPx + 'px;" />');
+			
+			$('#bg_image').on('change input', function() {
+				var url = $(this).val();
+				if (url) {
+					$('#live-preview-box').css('background-image', 'url(' + url + ')');
 				} else {
-					$('#preview-event-logo').html('<div style="width: ' + eventLogoPx + 'px; height: ' + (eventLogoPx/2) + 'px; background:#f0f0f0; text-align:center; font-size:10px; color:#999; display:flex; align-items:center; justify-content:center;">Event Logo</div>');
+					$('#live-preview-box').css('background-image', 'none');
 				}
+			}).trigger('change');
 
-				var bgImage = $('#bg_image').val();
-				var bgImageWidth = $('#bg_image_width').val();
-				var bgImagePx = (bgImageWidth / 100) * previewWidth;
-				if (bgImage) {
-					$('#preview-badge-logo').html('<img src="' + bgImage + '" style="width: ' + bgImagePx + 'px;" />');
-				} else {
-					$('#preview-badge-logo').html('<div style="width: ' + bgImagePx + 'px; height: ' + (bgImagePx/2) + 'px; background:#f0f0f0; text-align:center; font-size:10px; color:#999; display:flex; align-items:center; justify-content:center;">Badge Image</div>');
-				}
-
-				var qrSize = $('#qr_size').val();
-				var qrSizePx = (qrSize / 100) * previewWidth;
-				$('#preview-qr-code').html('<div style="width: ' + qrSizePx + 'px; height: ' + qrSizePx + 'px; background: url(https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Example) center/cover;"></div>');
-
-				var html = '';
-				$('.live-toggle').each(function() {
-					if ($(this).is(':checked')) {
-						var label = $(this).data('label');
-						var size = $(this).closest('tr').find('.live-size').val();
-						var value = 'Sample ' + label.replace('GF: ', '');
-						html += '<div style="margin-bottom: 5px;">';
-						html += '<div style="font-size: ' + (size * 0.6) + 'pt; font-weight: bold; color: #555; text-transform: uppercase;">' + label.replace('GF: ', '') + '</div>';
-						html += '<div style="font-size: ' + size + 'pt; border: 1px solid #ddd; border-radius: 4px; padding: 5px 10px; margin-top: 3px; background: #fafafa;">' + value + '</div>';
-						html += '</div>';
+			function applyDraggableResizable($el) {
+				$el.draggable({
+					containment: "parent",
+					stop: function(event, ui) {
+						updateHiddenInputs($(this));
+					}
+				}).resizable({
+					containment: "parent",
+					handles: "se", // Only bottom right corner to avoid complexity
+					stop: function(event, ui) {
+						updateHiddenInputs($(this));
+					},
+					resize: function(event, ui) {
+						// Optional: dynamically adjust font size if it's text, but we'll stick to a simple formula
+						if ($(this).data('type') === 'text') {
+							var newHeightPx = ui.size.height;
+							var scale = getScale();
+							var mmHeight = newHeightPx / scale;
+							// Approximate font size in pt: 1mm ~ 2.83pt. Let's say pt = mmHeight * 2
+							var pt = mmHeight * 2.5; 
+							$(this).css('font-size', pt + 'pt');
+							$(this).find('.text-label').css('font-size', pt + 'pt');
+						}
 					}
 				});
-				$('#preview-dynamic-fields').html(html);
 			}
 
-			$('.live-update').on('input change', updatePreview);
-			updatePreview();
+			function updateHiddenInputs($el) {
+				var scale = getScale();
+				var type = $el.data('type');
+				
+				var pos = $el.position();
+				var w = $el.width();
+				var h = $el.height();
+				
+				var x_mm = pos.left / scale;
+				var y_mm = pos.top / scale;
+				var w_mm = w / scale;
+				var h_mm = h / scale;
+				
+				if (type === 'qr') {
+					$('#qr_x').val(x_mm.toFixed(2));
+					$('#qr_y').val(y_mm.toFixed(2));
+					$('#qr_w').val(w_mm.toFixed(2));
+					$('#qr_h').val(h_mm.toFixed(2));
+				} else if (type === 'text') {
+					var idx = $el.data('index');
+					$('#text_x_' + idx).val(x_mm.toFixed(2));
+					$('#text_y_' + idx).val(y_mm.toFixed(2));
+					$('#text_w_' + idx).val(w_mm.toFixed(2));
+					$('#text_h_' + idx).val(h_mm.toFixed(2));
+					
+					// Save font size (pt)
+					var fontSizePx = parseInt($el.css('font-size'));
+					// rough pt conversion
+					var pt = (h_mm * 2.5).toFixed(1);
+					$('#text_size_' + idx).val(pt);
+				}
+			}
+
+			function renderElementsFromInputs() {
+				var scale = getScale();
+				
+				// QR Code
+				var qr_x = parseFloat($('#qr_x').val()) * scale;
+				var qr_y = parseFloat($('#qr_y').val()) * scale;
+				var qr_w = parseFloat($('#qr_w').val()) * scale;
+				var qr_h = parseFloat($('#qr_h').val()) * scale;
+				
+				var $qr = $('#element-qr');
+				$qr.css({
+					left: qr_x + 'px',
+					top: qr_y + 'px',
+					width: qr_w + 'px',
+					height: qr_h + 'px'
+				}).show();
+				applyDraggableResizable($qr);
+
+				// Text Fields
+				$('.field-toggle').each(function() {
+					var idx = $(this).data('index');
+					var label = $(this).data('label');
+					var isChecked = $(this).is(':checked');
+					
+					var $existing = $('#element-text-' + idx);
+					
+					if (isChecked) {
+						if ($existing.length === 0) {
+							// Create it
+							var x = parseFloat($('#text_x_' + idx).val()) * scale;
+							var y = parseFloat($('#text_y_' + idx).val()) * scale;
+							var w = parseFloat($('#text_w_' + idx).val()) * scale;
+							var h = parseFloat($('#text_h_' + idx).val()) * scale;
+							var pt = parseFloat($('#text_size_' + idx).val());
+							
+							var html = '<div id="element-text-' + idx + '" class="draggable-element" data-type="text" data-index="' + idx + '" style="left:' + x + 'px; top:' + y + 'px; width:' + w + 'px; height:' + h + 'px; font-size:' + pt + 'pt;">';
+							html += '<span class="text-label">' + label + '</span>';
+							html += '</div>';
+							
+							$('#live-preview-box').append(html);
+							applyDraggableResizable($('#element-text-' + idx));
+						}
+					} else {
+						if ($existing.length > 0) {
+							$existing.remove();
+						}
+					}
+				});
+			}
+
+			$('.field-toggle').on('change', function() {
+				renderElementsFromInputs();
+			});
+
+			// On resize of window, re-render to keep scale correct
+			var resizeTimer;
+			$(window).on('resize', function(e) {
+				clearTimeout(resizeTimer);
+				resizeTimer = setTimeout(function() {
+					// We need to re-apply px values based on mm inputs
+					$('#live-preview-box .draggable-element').each(function() {
+						var type = $(this).data('type');
+						var scale = getScale();
+						if (type === 'qr') {
+							$(this).css({
+								left: (parseFloat($('#qr_x').val()) * scale) + 'px',
+								top: (parseFloat($('#qr_y').val()) * scale) + 'px',
+								width: (parseFloat($('#qr_w').val()) * scale) + 'px',
+								height: (parseFloat($('#qr_h').val()) * scale) + 'px'
+							});
+						} else {
+							var idx = $(this).data('index');
+							$(this).css({
+								left: (parseFloat($('#text_x_' + idx).val()) * scale) + 'px',
+								top: (parseFloat($('#text_y_' + idx).val()) * scale) + 'px',
+								width: (parseFloat($('#text_w_' + idx).val()) * scale) + 'px',
+								height: (parseFloat($('#text_h_' + idx).val()) * scale) + 'px'
+							});
+						}
+					});
+				}, 250);
+			});
+
+			// Init
+			setTimeout(renderElementsFromInputs, 100);
 		});
 		</script>
 		<?php

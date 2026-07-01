@@ -67,8 +67,6 @@ class EMP_Badge_Generator {
 			'eccLevel'   => QRCode::ECC_L,
 		]);
 		$qrcode = new QRCode($qr_options);
-
-		$upload_dir = wp_upload_dir();
 		
 		foreach ( $attendees as $index => $attendee ) {
 			if ( $index > 0 ) {
@@ -78,37 +76,17 @@ class EMP_Badge_Generator {
 			// Generate QR Base64 Image
 			$qr_base64 = $qrcode->render( $attendee->qr_token );
 
-			// Determine Photo Path
-			$photo_html = '';
-			if ( ! empty( $attendee->photo_path ) ) {
-				$absolute_photo_path = $upload_dir['basedir'] . '/' . str_replace( 'emp_photos/', '', $attendee->photo_path );
-				// Adjust path logic in case it's just the file name
-				if ( file_exists( $absolute_photo_path ) ) {
-					$photo_html = '<img src="' . $absolute_photo_path . '" style="width:' . $design['photo_size'] . 'mm; height:' . $design['photo_size'] . 'mm;" />';
-				} else {
-					$photo_html = '<img src="' . $upload_dir['basedir'] . '/' . $attendee->photo_path . '" style="width:' . $design['photo_size'] . 'mm; height:' . $design['photo_size'] . 'mm;" />';
-				}
-			}
+			// Base Container
+			$html = '<div style="position: relative; width: ' . $badge_width . 'mm; height: ' . $badge_height . 'mm; font-family: sans-serif; overflow: hidden; background: #fff;">';
 
-			// Event Logo (Featured Image of Event)
-			$event_logo_html = '';
-			$event_thumb_id = get_post_thumbnail_id( $event_id );
-			if ( $event_thumb_id ) {
-				$event_thumb_url = wp_get_attachment_image_url( $event_thumb_id, 'full' );
-				if ( $event_thumb_url ) {
-					$event_logo_width = isset( $design['event_logo_width'] ) ? $design['event_logo_width'] : 35;
-					$event_logo_html = '<img src="' . esc_url( $event_thumb_url ) . '" style="width: ' . $event_logo_width . 'mm; background-color: #fff;" />';
-				}
-			}
-
-			// Badge Artwork / Background Image
-			$bg_html = '';
+			// Background Image
 			if ( ! empty( $design['bg_image'] ) ) {
-				$bg_width = isset( $design['bg_image_width'] ) ? $design['bg_image_width'] : 35;
-				$bg_html = '<img src="' . esc_url( $design['bg_image'] ) . '" style="width: ' . $bg_width . 'mm; background-color: #fff;" />';
+				$html .= '<div style="position: absolute; left: 0; top: 0; width: ' . $badge_width . 'mm; height: ' . $badge_height . 'mm; z-index: 1;">';
+				$html .= '<img src="' . esc_url( $design['bg_image'] ) . '" style="width: ' . $badge_width . 'mm; height: ' . $badge_height . 'mm;" />';
+				$html .= '</div>';
 			}
-			
-			$dynamic_text_html = '';
+
+			// Dynamic Text Fields (z-index 2)
 			if ( isset( $design['text_lines'] ) && is_array( $design['text_lines'] ) ) {
 				foreach ( $design['text_lines'] as $line ) {
 					if ( empty( $line['field'] ) ) continue;
@@ -184,7 +162,7 @@ class EMP_Badge_Generator {
 							if ( is_string( $value ) && filter_var( $value, FILTER_VALIDATE_URL ) ) {
 								$ext = strtolower( pathinfo( parse_url( $value, PHP_URL_PATH ), PATHINFO_EXTENSION ) );
 								if ( in_array( $ext, array( 'jpg', 'jpeg', 'png', 'gif', 'webp' ) ) ) {
-									$value = '<img src="' . esc_url( $value ) . '" style="max-height: 25mm; max-width: 100%; display: block;" />';
+									$value = '<img src="' . esc_url( $value ) . '" style="max-height: 100%; max-width: 100%; display: block;" />';
 								} else {
 									$value = esc_html( basename( parse_url( $value, PHP_URL_PATH ) ) );
 								}
@@ -195,38 +173,31 @@ class EMP_Badge_Generator {
 							$value = esc_html( $value );
 						}
 
-						$label_text = isset($line['label']) ? str_replace('GF: ', '', $line['label']) : $line['field'];
-						$size = $line['size'];
-						$label_size = $size * 0.6;
-						$dynamic_text_html .= '<div style="margin-bottom: 2mm;">';
-						$dynamic_text_html .= '<div style="font-size: ' . $label_size . 'pt; font-weight: bold; color: #555; text-transform: uppercase;">' . esc_html( $label_text ) . '</div>';
-						$dynamic_text_html .= '<div style="font-size: ' . $size . 'pt; border: 1px solid #ddd; border-radius: 4px; padding: 1mm 2mm; margin-top: 1mm; background: #fafafa; color: #000;">' . $value . '</div>';
-						$dynamic_text_html .= '</div>';
+						// Fallback to defaults if missing (backwards compat)
+						$x = isset( $line['x'] ) ? $line['x'] : 10;
+						$y = isset( $line['y'] ) ? $line['y'] : 10;
+						$w = isset( $line['w'] ) ? $line['w'] : 80;
+						$h = isset( $line['h'] ) ? $line['h'] : 10;
+						$size = isset( $line['size'] ) ? $line['size'] : 12;
+
+						$html .= '<div style="position: absolute; left: ' . $x . 'mm; top: ' . $y . 'mm; width: ' . $w . 'mm; height: ' . $h . 'mm; z-index: 2; overflow: hidden; display: table;">';
+						$html .= '<div style="display: table-cell; vertical-align: middle; text-align: center; font-size: ' . $size . 'pt; font-weight: bold; color: #333;">' . $value . '</div>';
+						$html .= '</div>';
 					}
 				}
 			}
 
-			$qr_size = isset( $design['qr_size'] ) ? $design['qr_size'] : 30;
+			// QR Code (z-index 2)
+			$qr_x = isset( $design['qr_x'] ) ? $design['qr_x'] : 10;
+			$qr_y = isset( $design['qr_y'] ) ? $design['qr_y'] : $badge_height - 40;
+			$qr_w = isset( $design['qr_w'] ) ? $design['qr_w'] : 30;
+			$qr_h = isset( $design['qr_h'] ) ? $design['qr_h'] : 30;
 
-			$html = '
-				<div style="position: relative; width: ' . $badge_width . 'mm; height: ' . $badge_height . 'mm; overflow: hidden; font-family: sans-serif; background: #fff; padding: 5mm; box-sizing: border-box;">
-					<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 2mm;">
-						<tr>
-							<td align="left" valign="top">' . $event_logo_html . '</td>
-							<td align="right" valign="top">' . $bg_html . '</td>
-						</tr>
-					</table>
-					<div style="border-top: 1px solid #eee; margin-bottom: 3mm;"></div>
-					
-					<div style="width: 100%;">
-						' . $dynamic_text_html . '
-					</div>
+			$html .= '<div style="position: absolute; left: ' . $qr_x . 'mm; top: ' . $qr_y . 'mm; width: ' . $qr_w . 'mm; height: ' . $qr_h . 'mm; z-index: 2;">';
+			$html .= '<img src="' . $qr_base64 . '" style="width: ' . $qr_w . 'mm; height: ' . $qr_h . 'mm; background-color: #fff;" />';
+			$html .= '</div>';
 
-					<div style="text-align: center; margin-top: 3mm; width: 100%;">
-						<img src="' . $qr_base64 . '" style="width: ' . $qr_size . 'mm; height: ' . $qr_size . 'mm;" />
-					</div>
-				</div>
-			';
+			$html .= '</div>'; // End Base Container
 
 			$mpdf->WriteHTML( $html );
 
