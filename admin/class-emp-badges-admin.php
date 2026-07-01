@@ -373,7 +373,7 @@ class EMP_Badges_Admin {
 					}
 				}).resizable({
 					containment: "parent",
-					handles: "se", // Only bottom right corner to avoid complexity
+					handles: "all", // All sides and corners
 					stop: function(event, ui) {
 						updateHiddenInputs($(this));
 					},
@@ -476,6 +476,11 @@ class EMP_Badges_Admin {
 			}
 
 			$('.field-toggle').on('change', function() {
+				if ($('.field-toggle:checked').length > 4) {
+					alert('You can select a maximum of 4 text fields.');
+					$(this).prop('checked', false);
+					return;
+				}
 				renderElementsFromInputs();
 			});
 

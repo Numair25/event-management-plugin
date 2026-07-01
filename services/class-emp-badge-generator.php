@@ -60,6 +60,7 @@ class EMP_Badge_Generator {
 			'margin_header' => 0,
 			'margin_footer' => 0,
 		));
+		$mpdf->SetAutoPageBreak(false, 0);
 
 		$qr_options = new QROptions([
 			'version'    => 5,
@@ -76,13 +77,12 @@ class EMP_Badge_Generator {
 			// Generate QR Base64 Image
 			$qr_base64 = $qrcode->render( $attendee->qr_token );
 
-			// Base Container
-			$html = '<div style="position: relative; width: ' . $badge_width . 'mm; height: ' . $badge_height . 'mm; font-family: sans-serif; overflow: hidden; background: #fff;">';
+			$html = '';
 
 			// Background Image
 			if ( ! empty( $design['bg_image'] ) ) {
-				$html .= '<div style="position: absolute; left: 0; top: 0; width: ' . $badge_width . 'mm; height: ' . $badge_height . 'mm; z-index: 1;">';
-				$html .= '<img src="' . esc_url( $design['bg_image'] ) . '" style="width: ' . $badge_width . 'mm; height: ' . $badge_height . 'mm;" />';
+				$html .= '<div style="position: absolute; left: 0; top: 0; width: ' . $badge_width . 'mm; height: ' . $badge_height . 'mm; z-index: -1;">';
+				$html .= '<img src="' . esc_url( $design['bg_image'] ) . '" style="width: ' . $badge_width . 'mm; height: ' . $badge_height . 'mm; margin: 0; padding: 0; display: block;" />';
 				$html .= '</div>';
 			}
 
@@ -180,8 +180,8 @@ class EMP_Badge_Generator {
 						$h = isset( $line['h'] ) ? $line['h'] : 10;
 						$size = isset( $line['size'] ) ? $line['size'] : 12;
 
-						$html .= '<div style="position: absolute; left: ' . $x . 'mm; top: ' . $y . 'mm; width: ' . $w . 'mm; height: ' . $h . 'mm; z-index: 2; overflow: hidden; display: table;">';
-						$html .= '<div style="display: table-cell; vertical-align: middle; text-align: center; font-size: ' . $size . 'pt; font-weight: bold; color: #333;">' . $value . '</div>';
+						$html .= '<div style="position: absolute; left: ' . $x . 'mm; top: ' . $y . 'mm; width: ' . $w . 'mm; height: ' . $h . 'mm; z-index: 2; overflow: hidden; text-align: center; font-size: ' . $size . 'pt; font-weight: bold; color: #333; font-family: sans-serif; line-height: 1.2;">';
+						$html .= $value;
 						$html .= '</div>';
 					}
 				}
@@ -194,10 +194,8 @@ class EMP_Badge_Generator {
 			$qr_h = isset( $design['qr_h'] ) ? $design['qr_h'] : 30;
 
 			$html .= '<div style="position: absolute; left: ' . $qr_x . 'mm; top: ' . $qr_y . 'mm; width: ' . $qr_w . 'mm; height: ' . $qr_h . 'mm; z-index: 2;">';
-			$html .= '<img src="' . $qr_base64 . '" style="width: ' . $qr_w . 'mm; height: ' . $qr_h . 'mm; background-color: #fff;" />';
+			$html .= '<img src="' . $qr_base64 . '" style="width: 100%; height: 100%; background-color: #fff; margin: 0; padding: 0; display: block;" />';
 			$html .= '</div>';
-
-			$html .= '</div>'; // End Base Container
 
 			$mpdf->WriteHTML( $html );
 
