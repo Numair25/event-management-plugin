@@ -93,6 +93,10 @@ class EMP_Core {
 		$plugin_audit_log_admin = new EMP_Audit_Log_Admin();
 		$this->loader->add_action( 'admin_menu', $plugin_audit_log_admin, 'register_menu' );
 
+		require_once EMP_PLUGIN_DIR . 'admin/class-emp-settings-admin.php';
+		$plugin_settings_admin = new EMP_Settings_Admin();
+		$this->loader->add_action( 'admin_menu', $plugin_settings_admin, 'register_menu' );
+
 		require_once EMP_PLUGIN_DIR . 'services/class-emp-gf-integration.php';
 		$plugin_gf_integration = new EMP_GF_Integration();
 		$this->loader->add_action( 'gform_loaded', $plugin_gf_integration, 'init' );

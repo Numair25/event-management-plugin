@@ -23,6 +23,29 @@ class EMP_GF_Integration {
 
 		// Auto-create attendee if form is linked directly to an event (no feed required)
 		add_action( 'gform_entry_post_save', array( $this, 'auto_create_attendee_for_linked_form' ), 5, 2 );
+
+		// Currency settings
+		add_filter( 'gform_currencies', array( $this, 'add_inr_currency' ) );
+		if ( get_option( 'emp_gf_force_inr', 0 ) ) {
+			add_filter( 'gform_currency', array( $this, 'set_inr_currency' ) );
+		}
+	}
+
+	public function add_inr_currency( $currencies ) {
+		$currencies['INR'] = array(
+			'name'               => __( 'Indian Rupee', 'event-management-plugin' ),
+			'symbol_left'        => '₹',
+			'symbol_right'       => '',
+			'symbol_padding'     => ' ',
+			'thousand_separator' => ',',
+			'decimal_separator'  => '.',
+			'decimals'           => 2,
+		);
+		return $currencies;
+	}
+
+	public function set_inr_currency( $currency ) {
+		return 'INR';
 	}
 
 	public function auto_create_attendee_for_linked_form( $entry, $form ) {
