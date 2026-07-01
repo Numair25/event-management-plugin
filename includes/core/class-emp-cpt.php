@@ -6,6 +6,38 @@ class EMP_CPT {
 
 	public function register() {
 		$this->register_event_cpt();
+		add_action( 'before_delete_post', array( $this, 'cleanup_event_data' ) );
+	}
+
+	public function cleanup_event_data( $post_id ) {
+		$post = get_post( $post_id );
+		if ( ! $post || $post->post_type !== 'emp_event' ) {
+			return;
+		}
+
+		global $wpdb;
+
+		// Cleanup Ticket Types and Badge Designs
+		$ticket_ids = $wpdb->get_col( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}emp_ticket_types WHERE event_id = %d", $post_id ) );
+		if ( ! empty( $ticket_ids ) ) {
+			foreach ( $ticket_ids as $tid ) {
+				delete_option( 'emp_badge_design_' . $tid );
+			}
+			$ids = implode( ',', array_map( 'intval', $ticket_ids ) );
+			$wpdb->query( "DELETE FROM {$wpdb->prefix}emp_ticket_types WHERE id IN ($ids)" );
+		}
+
+		// Cleanup Scan Points
+		$wpdb->delete( $wpdb->prefix . 'emp_scan_points', array( 'event_id' => $post_id ) );
+
+		// Cleanup Attendees, Payments, and Scan Logs
+		$attendee_ids = $wpdb->get_col( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}emp_attendees WHERE event_id = %d", $post_id ) );
+		if ( ! empty( $attendee_ids ) ) {
+			$ids = implode( ',', array_map( 'intval', $attendee_ids ) );
+			$wpdb->query( "DELETE FROM {$wpdb->prefix}emp_scan_logs WHERE attendee_id IN ($ids)" );
+			$wpdb->query( "DELETE FROM {$wpdb->prefix}emp_payments WHERE attendee_id IN ($ids)" );
+			$wpdb->query( "DELETE FROM {$wpdb->prefix}emp_attendees WHERE event_id = $post_id" );
+		}
 	}
 
 	private function register_event_cpt() {

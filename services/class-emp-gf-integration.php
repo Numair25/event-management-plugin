@@ -32,6 +32,9 @@ class EMP_GF_Integration {
 
 		// Duplicate validation
 		add_filter( 'gform_validation', array( $this, 'validate_duplicate_attendee' ) );
+
+		// Entry deletion sync
+		add_action( 'gform_delete_entry', array( $this, 'sync_delete_entry' ) );
 	}
 
 	public function validate_duplicate_attendee( $validation_result ) {
@@ -63,10 +66,21 @@ class EMP_GF_Integration {
 		}
 
 		if ( $email_field && ! empty( $email_value ) ) {
-			$table_attendees = $wpdb->prefix . 'emp_attendees';
-			$exists = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $table_attendees WHERE event_id = %d AND email = %s LIMIT 1", $event_id, $email_value ) );
+			// Check GF for existing entry with this email in this form
+			$search_criteria = array(
+				'status' => 'active',
+				'field_filters' => array(
+					array(
+						'key' => strval( $email_field->id ),
+						'value' => $email_value,
+						'operator' => 'is'
+					)
+				)
+			);
+			
+			$entries = GFAPI::get_entries( $form['id'], $search_criteria, null, array( 'offset' => 0, 'page_size' => 1 ) );
 
-			if ( $exists ) {
+			if ( ! is_wp_error( $entries ) && ! empty( $entries ) ) {
 				$validation_result['is_valid'] = false;
 				$email_field->failed_validation = true;
 				$email_field->validation_message = __( 'This email is already registered for this event.', 'event-management-plugin' );
@@ -75,6 +89,23 @@ class EMP_GF_Integration {
 
 		$validation_result['form'] = $form;
 		return $validation_result;
+	}
+
+	public function sync_delete_entry( $entry_id ) {
+		if ( ! class_exists( 'GFAPI' ) ) return;
+		$notes = GFAPI::get_notes( $entry_id );
+		foreach ( $notes as $note ) {
+			if ( preg_match( '/Created Attendee ID: (\d+)/', $note->value, $matches ) ) {
+				$attendee_id = intval( $matches[1] );
+				global $wpdb;
+				// Delete scan logs
+				$wpdb->delete( $wpdb->prefix . 'emp_scan_logs', array( 'attendee_id' => $attendee_id ) );
+				// Delete payments
+				$wpdb->delete( $wpdb->prefix . 'emp_payments', array( 'attendee_id' => $attendee_id ) );
+				// Delete attendee
+				$wpdb->delete( $wpdb->prefix . 'emp_attendees', array( 'id' => $attendee_id ) );
+			}
+		}
 	}
 
 	public function add_inr_currency( $currencies ) {
