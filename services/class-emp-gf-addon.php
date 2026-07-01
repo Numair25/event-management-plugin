@@ -93,6 +93,18 @@ class EMP_GF_Addon extends GFFeedAddOn {
 					),
 				),
 			),
+			array(
+				'title'  => __( 'Options', 'event-management-plugin' ),
+				'fields' => array(
+					array(
+						'name'           => 'condition',
+						'label'          => __( 'Conditional Logic', 'event-management-plugin' ),
+						'type'           => 'feed_condition',
+						'checkbox_label' => __( 'Enable Condition', 'event-management-plugin' ),
+						'instructions'   => __( 'Process this feed if', 'event-management-plugin' ),
+					),
+				),
+			),
 		);
 	}
 
