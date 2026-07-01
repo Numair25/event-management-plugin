@@ -85,6 +85,10 @@ class EMP_Core {
 		$plugin_dashboard_admin = new EMP_Dashboard_Admin();
 		$this->loader->add_action( 'admin_menu', $plugin_dashboard_admin, 'register_menu' );
 
+		require_once EMP_PLUGIN_DIR . 'admin/class-emp-scan-stats-admin.php';
+		$plugin_scan_stats_admin = new EMP_Scan_Stats_Admin();
+		$this->loader->add_action( 'admin_menu', $plugin_scan_stats_admin, 'register_menu' );
+
 		require_once EMP_PLUGIN_DIR . 'admin/class-emp-audit-log-admin.php';
 		$plugin_audit_log_admin = new EMP_Audit_Log_Admin();
 		$this->loader->add_action( 'admin_menu', $plugin_audit_log_admin, 'register_menu' );

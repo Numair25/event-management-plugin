@@ -38,22 +38,16 @@ class EMP_Dashboard_Admin {
 			return;
 		}
 
-		$selected_date = isset( $_GET['filter_date'] ) ? sanitize_text_field( $_GET['filter_date'] ) : wp_date( 'Y-m-d' );
-
-		// Event & Date Selector
+		// Event Selector
 		echo '<form method="get" action="">';
 		echo '<input type="hidden" name="post_type" value="emp_event" />';
 		echo '<input type="hidden" name="page" value="emp-dashboard" />';
-		echo '<div style="display:flex; gap:15px; margin-bottom:20px; align-items:center;">';
-		echo '<select name="event_id" onchange="this.form.submit()" style="font-size:16px; padding:5px;">';
+		echo '<select name="event_id" onchange="this.form.submit()" style="font-size:16px; padding:5px; margin-bottom:20px;">';
 		foreach ( $events as $event ) {
 			$selected = ( $event->ID == $event_id ) ? 'selected' : '';
 			echo '<option value="' . esc_attr( $event->ID ) . '" ' . $selected . '>' . esc_html( $event->post_title ) . '</option>';
 		}
 		echo '</select>';
-		
-		echo '<input type="date" name="filter_date" value="' . esc_attr( $selected_date ) . '" onchange="this.form.submit()" style="font-size:16px; padding:5px;" />';
-		echo '</div>';
 		echo '</form>';
 
 		$stats = $this->get_event_stats( $event_id );
@@ -115,23 +109,6 @@ class EMP_Dashboard_Admin {
 		// Export Button
 		$export_url = admin_url( 'edit.php?post_type=emp_event&page=emp-dashboard&action=export_csv&event_id=' . $event_id );
 		echo '<p><a href="' . esc_url( $export_url ) . '" class="button button-primary">' . __( 'Export Attendee Data (CSV)', 'event-management-plugin' ) . '</a></p>';
-
-		// Scan Statistics for Date
-		echo '<div style="background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 30px; margin-top: 30px;">';
-		echo '<h2>' . sprintf( __( 'Scan Statistics for %s', 'event-management-plugin' ), esc_html( wp_date( get_option('date_format'), strtotime( $selected_date ) ) ) ) . '</h2>';
-		
-		$scan_stats = $this->get_scan_point_stats( $event_id, $selected_date );
-		
-		if ( ! empty( $scan_stats ) ) {
-			echo '<div style="display: flex; gap: 20px; flex-wrap: wrap;">';
-			foreach ( $scan_stats as $stat ) {
-				$this->render_widget( $stat->point_name, $stat->scan_count, '#6f42c1' );
-			}
-			echo '</div>';
-		} else {
-			echo '<p>' . __( 'No successful scans recorded on this date.', 'event-management-plugin' ) . '</p>';
-		}
-		echo '</div>';
 
 
 		echo '</div>';
@@ -229,24 +206,5 @@ class EMP_Dashboard_Admin {
 		
 		fclose( $output );
 		exit;
-	}
-
-	private function get_scan_point_stats( $event_id, $date ) {
-		global $wpdb;
-		$table_logs = $wpdb->prefix . 'emp_scan_logs';
-		$table_points = $wpdb->prefix . 'emp_scan_points';
-		$table_attendees = $wpdb->prefix . 'emp_attendees';
-
-		$results = $wpdb->get_results( $wpdb->prepare( "
-			SELECT p.name as point_name, COUNT(l.id) as scan_count
-			FROM $table_logs l
-			INNER JOIN $table_points p ON l.scan_point_id = p.id
-			INNER JOIN $table_attendees a ON l.attendee_id = a.id
-			WHERE a.event_id = %d AND l.result = 'pass' AND DATE(l.scanned_at) = %s
-			GROUP BY p.id
-			ORDER BY p.name ASC
-		", $event_id, $date ) );
-
-		return $results;
 	}
 }
