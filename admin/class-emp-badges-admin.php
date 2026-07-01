@@ -176,7 +176,7 @@ class EMP_Badges_Admin {
 				font-family: sans-serif;
 			}
 			.draggable-element {
-				position: absolute;
+				position: absolute !important;
 				border: 1px dashed #0073aa;
 				background: rgba(255, 255, 255, 0.7);
 				cursor: move;
@@ -204,7 +204,8 @@ class EMP_Badges_Admin {
 			}
 			.draggable-element[data-type="qr"] {
 				background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%23333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>');
-				background-size: cover;
+				background-size: 100% 100%;
+				background-repeat: no-repeat;
 				background-color: rgba(255,255,255,0.9);
 			}
 		</style>
