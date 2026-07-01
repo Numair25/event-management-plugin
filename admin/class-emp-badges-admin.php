@@ -366,13 +366,17 @@ class EMP_Badges_Admin {
 			}).trigger('change');
 
 			function applyDraggableResizable($el) {
+				if ($el.hasClass('ui-draggable')) {
+					return;
+				}
+				
 				$el.draggable({
-					containment: "parent",
+					containment: "#live-preview-box",
 					stop: function(event, ui) {
 						updateHiddenInputs($(this));
 					}
 				}).resizable({
-					containment: "parent",
+					containment: "#live-preview-box",
 					handles: "all", // All sides and corners
 					stop: function(event, ui) {
 						updateHiddenInputs($(this));
