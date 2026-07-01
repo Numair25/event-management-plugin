@@ -1,0 +1,10 @@
+{
+    "name": "antigravity/event-management-plugin",
+    "description": "Event Management & Check-In Plugin",
+    "type": "wordpress-plugin",
+    "require": {
+        "php": ">=8.1",
+        "mpdf/mpdf": "^8.2",
+        "chillerlan/php-qrcode": "^5.0"
+    }
+}

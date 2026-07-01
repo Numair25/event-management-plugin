@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<ruleset name="WordPress Plugin Coding Standards">
+	<description>A custom ruleset to check for WordPress coding standards.</description>
+
+	<!-- Pass some flags to PHPCS:
+		 p flag: Show progress of the run.
+		 s flag: Show sniff codes in all reports.
+		 v flag: Print verbosely (optional).
+	-->
+	<arg value="ps"/>
+
+	<!-- Only check PHP files. -->
+	<arg name="extensions" value="php"/>
+
+	<!-- Check all files in the current directory and below. -->
+	<file>.</file>
+
+	<!-- Exclude the vendor and tests directories. -->
+	<exclude-pattern>/vendor/*</exclude-pattern>
+	<exclude-pattern>/tests/*</exclude-pattern>
+
+	<!-- Include the WordPress ruleset. -->
+	<rule ref="WordPress">
+		<!-- We may want to allow short arrays instead of array() for PHP 8.1+ -->
+		<exclude name="Generic.Arrays.DisallowShortArraySyntax"/>
+	</rule>
+
+	<!-- Set the minimum supported WP version. -->
+	<config name="minimum_supported_wp_version" value="6.0"/>
+
+	<!-- Let the CodeSniffer know we are using PHP 8.1+ -->
+	<config name="testVersion" value="8.1-"/>
+</ruleset>
