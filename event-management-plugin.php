@@ -4,7 +4,8 @@
  * Plugin URI:  https://example.com/
  * Description: Manages the full lifecycle of an in-person event: registration, payments, photo badges, on-site QR check-in, communications, and reporting. Requires Gravity Forms.
  * Version:     1.0.0
- * Author:      Antigravity
+ * Author:      StandardTouch
+ * Author URI:  https://standardtouch.com
  * Text Domain: event-management-plugin
  * Domain Path: /languages
  */
