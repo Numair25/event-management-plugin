@@ -34,7 +34,8 @@ A comprehensive WordPress plugin for managing physical events, handling walk-in 
 
 6. **Analytics & Dashboard**
    - Visual dashboard with Chart.js powered graphs showing Peak Entry Times.
-   - Real-time attendance tracking (registered vs. checked-in).
+   - Real-time attendance tracking (registered vs. checked-in) and revenue aggregation.
+   - Dynamic **Date-Based Scan Statistics**: filter data by any date to see an exact breakdown of successful scans across all active Scan Points (Checkin, Food, VIP, etc.).
    - Dedicated **Live Scan Audit Log** tab with advanced filtering by Event, Station, Scan Result (Pass/Fail), and Attendee Search.
    - Full CSV export and import support for migrating attendee lists.
 
