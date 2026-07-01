@@ -287,8 +287,12 @@ class EMP_Badges_Admin {
 												$h = $is_enabled ? $saved_fields[$val]['h'] : 10;
 												
 												if ( $override_gf_id || ( ! $is_enabled && empty( $saved_fields ) ) ) {
-													$is_enabled = true;
-													if ( $index == 0 ) $size = 16;
+													if ( $index < 4 ) {
+														$is_enabled = true;
+														if ( $index == 0 ) $size = 16;
+													} else {
+														$is_enabled = false;
+													}
 												}
 											?>
 											<tr>
