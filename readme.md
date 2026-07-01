@@ -35,7 +35,7 @@ A comprehensive WordPress plugin for managing physical events, handling walk-in 
 6. **Analytics & Dashboard**
    - Visual dashboard with Chart.js powered graphs showing Peak Entry Times.
    - Real-time attendance tracking (registered vs. checked-in) and revenue aggregation.
-   - Dynamic **Date-Based Scan Statistics**: filter data by any date to see an exact breakdown of successful scans across all active Scan Points (Checkin, Food, VIP, etc.).
+   - Dedicated **Scan Statistics** menu: advanced filtering by Event, Date, and specific Scan Point to view precise scan volumes.
    - Dedicated **Live Scan Audit Log** tab with advanced filtering by Event, Station, Scan Result (Pass/Fail), and Attendee Search.
    - Full CSV export and import support for migrating attendee lists.
 
@@ -64,6 +64,10 @@ Go to **Events > Scan Points**. Create zones where attendees will be scanned (e.
 ### 7. Run the Event!
 - Give your door staff the "Scanner" role and direct them to the **Scanner Access** page to scan QR codes on phones/badges.
 - Use the **Walk-in Kiosk** to instantly register and print badges for attendees paying at the door.
+
+### 8. Track Data & Analytics
+- Go to **Events > Dashboard & Reports** for high-level revenue and registration metrics.
+- Go to **Events > Scan Statistics** for granular breakdown of scan volumes by date and specific scan points.
 
 ## Technical Notes
 - Requires PHP 7.4+

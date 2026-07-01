@@ -125,6 +125,16 @@ class EMP_Get_Started_Admin {
 				</div>
 			</div>
 
+			<div class="emp-step-card">
+				<div class="emp-step-number">8</div>
+				<div class="emp-step-content">
+					<h3>Track Data & Analytics</h3>
+					<p>Monitor your event's success in real-time. Use the <strong>Dashboard & Reports</strong> tab for high-level revenue metrics, and use the <strong>Scan Statistics</strong> tab to see exactly how many people have passed through each of your Scan Points (e.g., Food, Main Entrance) on any given date.</p>
+					<a href="<?php echo admin_url('edit.php?post_type=emp_event&page=emp-dashboard'); ?>" class="button button-secondary">View Dashboard</a>
+					<a href="<?php echo admin_url('edit.php?post_type=emp_event&page=emp-scan-stats'); ?>" class="button button-secondary">View Scan Statistics</a>
+				</div>
+			</div>
+
 		</div>
 		<?php
 	}
