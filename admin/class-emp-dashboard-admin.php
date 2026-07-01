@@ -110,8 +110,6 @@ class EMP_Dashboard_Admin {
 		$export_url = admin_url( 'edit.php?post_type=emp_event&page=emp-dashboard&action=export_csv&event_id=' . $event_id );
 		echo '<p><a href="' . esc_url( $export_url ) . '" class="button button-primary">' . __( 'Export Attendee Data (CSV)', 'event-management-plugin' ) . '</a></p>';
 
-		// Recent Scans Table (Audit)
-		$this->render_recent_scans( $event_id );
 
 		echo '</div>';
 	}
@@ -173,45 +171,6 @@ class EMP_Dashboard_Admin {
 		return empty($data) ? array('08:00' => 0) : $data;
 	}
 
-	private function render_recent_scans( $event_id ) {
-		global $wpdb;
-		$table_logs = $wpdb->prefix . 'emp_scan_logs';
-		$table_points = $wpdb->prefix . 'emp_scan_points';
-		$table_attendees = $wpdb->prefix . 'emp_attendees';
-
-		$logs = $wpdb->get_results( $wpdb->prepare( "
-			SELECT l.*, p.name as point_name, a.name as attendee_name 
-			FROM $table_logs l
-			LEFT JOIN $table_points p ON l.scan_point_id = p.id
-			LEFT JOIN $table_attendees a ON l.attendee_id = a.id
-			WHERE a.event_id = %d
-			ORDER BY l.scanned_at DESC
-			LIMIT 20
-		", $event_id ) );
-
-		echo '<h2>' . __( 'Live Scan Audit Log', 'event-management-plugin' ) . '</h2>';
-		echo '<table class="wp-list-table widefat fixed striped">';
-		echo '<thead><tr><th>' . __( 'Time', 'event-management-plugin' ) . '</th><th>' . __( 'Attendee', 'event-management-plugin' ) . '</th><th>' . __( 'Station', 'event-management-plugin' ) . '</th><th>' . __( 'Result', 'event-management-plugin' ) . '</th><th>' . __( 'Reason', 'event-management-plugin' ) . '</th><th>' . __( 'Staff ID', 'event-management-plugin' ) . '</th></tr></thead>';
-		echo '<tbody>';
-
-		if ( $logs ) {
-			foreach ( $logs as $log ) {
-				$color = ( $log->result === 'pass' ) ? 'green' : 'red';
-				echo '<tr>';
-				echo '<td>' . esc_html( $log->scanned_at ) . '</td>';
-				echo '<td>' . esc_html( $log->attendee_name ?: 'Unknown' ) . '</td>';
-				echo '<td>' . esc_html( $log->point_name ) . '</td>';
-				echo '<td style="color:' . $color . '; font-weight:bold;">' . esc_html( strtoupper( $log->result ) ) . '</td>';
-				echo '<td>' . esc_html( $log->reason ) . '</td>';
-				echo '<td>' . esc_html( $log->staff_user_id ) . '</td>';
-				echo '</tr>';
-			}
-		} else {
-			echo '<tr><td colspan="6">' . __( 'No scans recorded yet.', 'event-management-plugin' ) . '</td></tr>';
-		}
-		
-		echo '</tbody></table>';
-	}
 
 	private function export_csv( $event_id ) {
 		global $wpdb;
