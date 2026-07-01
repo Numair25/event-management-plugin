@@ -131,7 +131,7 @@ class EMP_GF_Integration {
 		$event_id = $wpdb->get_var( $wpdb->prepare( "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_emp_gf_form_id' AND meta_value = %d LIMIT 1", $form['id'] ) );
 		
 		if ( ! $event_id ) {
-			return; // Not linked to any event directly
+			return $entry; // Not linked to any event directly
 		}
 
 		// Bail if there are active Gravity Forms Feeds handling this form
@@ -139,7 +139,7 @@ class EMP_GF_Integration {
 			$addon = EMP_GF_Addon::get_instance();
 			$feeds = $addon->get_active_feeds( $form['id'] );
 			if ( ! empty( $feeds ) ) {
-				return;
+				return $entry;
 			}
 		}
 
@@ -195,6 +195,8 @@ class EMP_GF_Integration {
 			$comms = new EMP_Communications();
 			$comms->send_email( $attendee_id, 'confirmation' );
 		}
+		
+		return $entry;
 	}
 
 	public function append_badge_download( $confirmation, $form, $entry, $ajax ) {
