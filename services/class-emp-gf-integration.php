@@ -138,7 +138,7 @@ class EMP_GF_Integration {
 			$addon = EMP_GF_Addon::get_instance();
 			$feeds = $addon->get_active_feeds( $form['id'] );
 			if ( ! empty( $feeds ) ) {
-				return; // Let the feed's process_feed handle it
+				return $entry; // Let the feed's process_feed handle it
 			}
 		}
 
@@ -147,7 +147,7 @@ class EMP_GF_Integration {
 		$event_id = $wpdb->get_var( $wpdb->prepare( "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_emp_gf_form_id' AND meta_value = %d LIMIT 1", $form['id'] ) );
 		
 		if ( ! $event_id ) {
-			return; // Not linked to any event directly
+			return $entry; // Not linked to any event directly
 		}
 
 		// Also get the first available ticket type for this event as default
@@ -202,6 +202,8 @@ class EMP_GF_Integration {
 			$comms = new EMP_Communications();
 			$comms->send_email( $attendee_id, 'confirmation' );
 		}
+
+		return $entry;
 	}
 
 	public function append_badge_download( $confirmation, $form, $entry, $ajax ) {
@@ -213,7 +215,7 @@ class EMP_GF_Integration {
 
 		// Fallback: check this entry's notes for "Created Attendee ID"
 		// The feed's process_feed writes a note to the GF entry when it creates an attendee
-		if ( empty( $attendee_ids ) && class_exists( 'GFAPI' ) ) {
+		if ( empty( $attendee_ids ) && class_exists( 'GFAPI' ) && ! empty( $entry ) && ! empty( $entry['id'] ) ) {
 			$notes = GFAPI::get_notes( array( 'entry_id' => $entry['id'] ) );
 			if ( is_array( $notes ) && ! is_wp_error( $notes ) ) {
 				foreach ( $notes as $note ) {
