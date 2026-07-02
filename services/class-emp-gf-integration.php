@@ -202,7 +202,43 @@ class EMP_GF_Integration {
 		global $wpdb;
 		$table_attendees = $wpdb->prefix . 'emp_attendees';
 
+		// Try static IDs first (set by auto_create or feed process_feed)
 		$attendee_ids = self::$last_attendee_ids;
+
+		// Fallback: look up attendees directly from the database using entry email
+		// This is needed because GF feed processing may run AFTER confirmation generation
+		if ( empty( $attendee_ids ) ) {
+			$email = '';
+			foreach ( $form['fields'] as $field ) {
+				if ( $field->type === 'email' ) {
+					$email = rgar( $entry, strval( $field->id ) );
+					break;
+				}
+			}
+
+			if ( ! empty( $email ) ) {
+				// Find the attendee(s) created for this email (most recent first)
+				$attendees = $wpdb->get_col( $wpdb->prepare(
+					"SELECT id FROM $table_attendees WHERE email = %s ORDER BY id DESC LIMIT 5",
+					$email
+				) );
+				if ( ! empty( $attendees ) ) {
+					$attendee_ids = $attendees;
+				}
+			}
+		}
+
+		// Also check entry notes as another fallback
+		if ( empty( $attendee_ids ) && class_exists( 'GFAPI' ) ) {
+			$notes = GFAPI::get_notes( $entry['id'] );
+			if ( ! is_wp_error( $notes ) ) {
+				foreach ( $notes as $note ) {
+					if ( preg_match( '/Created Attendee ID: (\d+)/', $note->value, $matches ) ) {
+						$attendee_ids[] = intval( $matches[1] );
+					}
+				}
+			}
+		}
 
 		if ( empty( $attendee_ids ) ) {
 			return $confirmation;
@@ -236,8 +272,6 @@ class EMP_GF_Integration {
 		if ( is_string( $confirmation ) ) {
 			return $confirmation . $download_html;
 		} elseif ( is_array( $confirmation ) && isset( $confirmation['redirect'] ) ) {
-			// If it's a redirect, we can't easily append HTML to the next page unless we use session/cookies.
-			// For now, we return as is.
 			return $confirmation;
 		}
 
