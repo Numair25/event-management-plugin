@@ -124,7 +124,7 @@ class EMP_Communications {
 
 				require_once EMP_PLUGIN_DIR . 'services/class-emp-badge-generator.php';
 				$generator = new EMP_Badge_Generator();
-				$generator->generate_individual( $attendee->id, 'I' ); // 'I' triggers inline view
+				$generator->generate_individual( $attendee->id, 'D' ); // 'D' triggers forced download
 				exit;
 			} else {
 				wp_die( __( 'Invalid badge link.', 'event-management-plugin' ) );
