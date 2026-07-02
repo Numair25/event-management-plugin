@@ -118,6 +118,7 @@ class EMP_GF_Integration {
 			'thousand_separator' => ',',
 			'decimal_separator'  => '.',
 			'decimals'           => 2,
+			'code'               => 'INR',
 		);
 		return $currencies;
 	}
