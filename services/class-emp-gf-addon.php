@@ -36,6 +36,14 @@ class EMP_GF_Addon extends GFFeedAddOn {
 	}
 
 	public function feed_settings_fields() {
+		$event_choices = $this->get_events_choices();
+		$valid_event_ids = array();
+		foreach ( $event_choices as $choice ) {
+			if ( $choice['value'] !== '' ) {
+				$valid_event_ids[] = $choice['value'];
+			}
+		}
+
 		return array(
 			array(
 				'title'  => __( 'Event Settings', 'event-management-plugin' ),
@@ -44,15 +52,19 @@ class EMP_GF_Addon extends GFFeedAddOn {
 						'name'    => 'event_id',
 						'label'   => __( 'Select Event', 'event-management-plugin' ),
 						'type'    => 'select',
-						'choices' => $this->get_events_choices(),
+						'choices' => $event_choices,
 						'tooltip' => __( 'Select the event this form is registering for.', 'event-management-plugin' ),
 					),
 					array(
-						'name'    => 'ticket_type_id',
-						'label'   => __( 'Select Ticket Type', 'event-management-plugin' ),
-						'type'    => 'select',
-						'choices' => $this->get_ticket_types_choices(),
-						'tooltip' => __( 'Select the ticket type for attendees created from this feed.', 'event-management-plugin' ),
+						'name'       => 'ticket_type_id',
+						'label'      => __( 'Select Ticket Type', 'event-management-plugin' ),
+						'type'       => 'select',
+						'choices'    => $this->get_ticket_types_choices(),
+						'tooltip'    => __( 'Select the ticket type for attendees created from this feed.', 'event-management-plugin' ),
+						'dependency' => array(
+							'field'  => 'event_id',
+							'values' => $valid_event_ids,
+						),
 					),
 				),
 			),
@@ -110,9 +122,20 @@ class EMP_GF_Addon extends GFFeedAddOn {
 
 	public function feed_list_columns() {
 		return array(
-			'feedName' => __( 'Name', 'event-management-plugin' ),
-			'event_id' => __( 'Event', 'event-management-plugin' ),
+			'ticket_type_name' => __( 'Name', 'event-management-plugin' ),
+			'event_id'         => __( 'Event', 'event-management-plugin' ),
 		);
+	}
+
+	public function get_column_value_ticket_type_name( $feed ) {
+		$ticket_type_id = rgar( $feed['meta'], 'ticket_type_id' );
+		if ( ! $ticket_type_id ) {
+			return __( 'Unnamed Feed', 'event-management-plugin' );
+		}
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'emp_ticket_types';
+		$ticket_type = $wpdb->get_row( $wpdb->prepare( "SELECT name FROM $table_name WHERE id = %d", $ticket_type_id ) );
+		return $ticket_type ? $ticket_type->name : __( 'Unnamed Feed', 'event-management-plugin' );
 	}
 
 	private function get_events_choices() {
