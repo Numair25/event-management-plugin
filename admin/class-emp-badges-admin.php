@@ -387,13 +387,13 @@ class EMP_Badges_Admin {
 						updateHiddenInputs($(this));
 					},
 					resize: function(event, ui) {
-						// Optional: dynamically adjust font size if it's text, but we'll stick to a simple formula
 						if ($(this).data('type') === 'text') {
 							var newHeightPx = ui.size.height;
 							var scale = getScale();
 							var mmHeight = newHeightPx / scale;
-							// Approximate font size in pt: 1mm ~ 2.83pt. Let's say pt = mmHeight * 2
-							var pt = mmHeight * 2.5; 
+							// Match PDF generator logic: cap at 24pt max, 6pt min
+							var pt = Math.min(mmHeight * 2.83, 24);
+							pt = Math.max(pt, 6);
 							$(this).css('font-size', pt + 'pt');
 							$(this).find('.text-label').css('font-size', pt + 'pt');
 						}
@@ -426,11 +426,10 @@ class EMP_Badges_Admin {
 					$('#text_w_' + idx).val(w_mm.toFixed(2));
 					$('#text_h_' + idx).val(h_mm.toFixed(2));
 					
-					// Save font size (pt)
-					var fontSizePx = parseInt($el.css('font-size'));
-					// rough pt conversion
-					var pt = (h_mm * 2.5).toFixed(1);
-					$('#text_size_' + idx).val(pt);
+					// Save font size (pt) - match PDF generator caps
+					var pt = Math.min(h_mm * 2.83, 24);
+					pt = Math.max(pt, 6);
+					$('#text_size_' + idx).val(pt.toFixed(1));
 				}
 			}
 

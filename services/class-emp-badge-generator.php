@@ -152,7 +152,8 @@ class EMP_Badge_Generator {
 					}
 					
 					if ( $value ) {
-						// Process Gravity Forms file uploads (JSON arrays or URLs)
+						// Detect if it's a file/image field
+						$is_image = false;
 						if ( is_string( $value ) ) {
 							$decoded = json_decode( $value, true );
 							if ( is_array( $decoded ) && count( $decoded ) > 0 ) {
@@ -162,7 +163,7 @@ class EMP_Badge_Generator {
 							if ( is_string( $value ) && filter_var( $value, FILTER_VALIDATE_URL ) ) {
 								$ext = strtolower( pathinfo( parse_url( $value, PHP_URL_PATH ), PATHINFO_EXTENSION ) );
 								if ( in_array( $ext, array( 'jpg', 'jpeg', 'png', 'gif', 'webp' ) ) ) {
-									$value = '<img src="' . esc_url( $value ) . '" style="max-height: 100%; max-width: 100%; display: block;" />';
+									$is_image = true;
 								} else {
 									$value = esc_html( basename( parse_url( $value, PHP_URL_PATH ) ) );
 								}
@@ -174,15 +175,29 @@ class EMP_Badge_Generator {
 						}
 
 						// Fallback to defaults if missing (backwards compat)
-						$x = isset( $line['x'] ) ? $line['x'] : 10;
-						$y = isset( $line['y'] ) ? $line['y'] : 10;
-						$w = isset( $line['w'] ) ? $line['w'] : 80;
-						$h = isset( $line['h'] ) ? $line['h'] : 10;
-						$size = isset( $line['size'] ) ? $line['size'] : 12;
+						$x = isset( $line['x'] ) ? floatval( $line['x'] ) : 10;
+						$y = isset( $line['y'] ) ? floatval( $line['y'] ) : 10;
+						$w = isset( $line['w'] ) ? floatval( $line['w'] ) : 80;
+						$h = isset( $line['h'] ) ? floatval( $line['h'] ) : 10;
+						$size = isset( $line['size'] ) ? floatval( $line['size'] ) : 12;
 
-						$html .= '<div style="position: absolute; left: ' . $x . 'mm; top: ' . $y . 'mm; width: ' . $w . 'mm; height: ' . $h . 'mm; z-index: 2; overflow: hidden; text-align: center; font-size: ' . $size . 'pt; font-weight: bold; color: #333; font-family: sans-serif; line-height: 1.2;">';
-						$html .= $value;
-						$html .= '</div>';
+						if ( $is_image ) {
+							// Render image field: fit image inside the box
+							$html .= '<div style="position: absolute; left: ' . $x . 'mm; top: ' . $y . 'mm; width: ' . $w . 'mm; height: ' . $h . 'mm; z-index: 2; overflow: hidden; text-align: center;">';
+							$html .= '<img src="' . esc_url( $value ) . '" style="width: 100%; height: 100%; display: block; margin: 0; padding: 0;" />';
+							$html .= '</div>';
+						} else {
+							// Render text field: auto-fit font to box
+							// Cap font size: never bigger than box height in pt, and reasonable max
+							$max_pt = $h * 2.83; // 1mm ≈ 2.83pt
+							if ( $size > $max_pt ) $size = $max_pt;
+							if ( $size > 24 ) $size = 24; // Hard cap at 24pt
+							if ( $size < 6 ) $size = 6;   // Minimum readable
+
+							$html .= '<div style="position: absolute; left: ' . $x . 'mm; top: ' . $y . 'mm; width: ' . $w . 'mm; height: ' . $h . 'mm; z-index: 2; overflow: hidden; text-align: center; font-size: ' . $size . 'pt; font-weight: bold; color: #333; font-family: sans-serif; line-height: ' . $h . 'mm; word-wrap: break-word;">';
+							$html .= $value;
+							$html .= '</div>';
+						}
 					}
 				}
 			}

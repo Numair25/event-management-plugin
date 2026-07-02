@@ -126,6 +126,16 @@ class EMP_GF_Integration {
 	}
 
 	public function auto_create_attendee_for_linked_form( $entry, $form ) {
+		// If the GF Addon has active feeds for this form, skip auto-creation.
+		// The feeds handle attendee creation with proper ticket types from conditional logic.
+		if ( class_exists( 'EMP_GF_Addon' ) ) {
+			$addon = EMP_GF_Addon::get_instance();
+			$feeds = $addon->get_active_feeds( $form['id'] );
+			if ( ! empty( $feeds ) ) {
+				return; // Let the feed's process_feed handle it
+			}
+		}
+
 		// Check if this form is attached to any event via _emp_gf_form_id
 		global $wpdb;
 		$event_id = $wpdb->get_var( $wpdb->prepare( "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = '_emp_gf_form_id' AND meta_value = %d LIMIT 1", $form['id'] ) );
