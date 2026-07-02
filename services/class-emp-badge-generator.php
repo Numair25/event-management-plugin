@@ -191,10 +191,20 @@ class EMP_Badge_Generator {
 							// Cap font size: never bigger than box height in pt, and reasonable max
 							$max_pt = $h * 2.83; // 1mm ≈ 2.83pt
 							if ( $size > $max_pt ) $size = $max_pt;
+							
+							// Auto-fit font to width (approximate character width is 0.55 of font size)
+							$char_width_factor = 0.55;
+							$estimated_text_width_pt = strlen( $value ) * $size * $char_width_factor;
+							$box_width_pt = $w * 2.83;
+							
+							if ( $estimated_text_width_pt > $box_width_pt && strlen( $value ) > 0 ) {
+								$size = $box_width_pt / ( strlen( $value ) * $char_width_factor );
+							}
+
 							if ( $size > 24 ) $size = 24; // Hard cap at 24pt
 							if ( $size < 6 ) $size = 6;   // Minimum readable
 
-							$html .= '<div style="position: absolute; left: ' . $x . 'mm; top: ' . $y . 'mm; width: ' . $w . 'mm; height: ' . $h . 'mm; z-index: 2; overflow: hidden; text-align: center; font-size: ' . $size . 'pt; font-weight: bold; color: #333; font-family: sans-serif; line-height: ' . $h . 'mm; word-wrap: break-word;">';
+							$html .= '<div style="position: absolute; left: ' . $x . 'mm; top: ' . $y . 'mm; width: ' . $w . 'mm; height: ' . $h . 'mm; z-index: 2; overflow: hidden; text-align: center; font-size: ' . $size . 'pt; font-weight: bold; color: #333; font-family: sans-serif; line-height: ' . $h . 'mm; white-space: nowrap; text-overflow: hidden;">';
 							$html .= $value;
 							$html .= '</div>';
 						}
