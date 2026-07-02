@@ -205,30 +205,8 @@ class EMP_GF_Integration {
 		// Try static IDs first (set by auto_create or feed process_feed)
 		$attendee_ids = self::$last_attendee_ids;
 
-		// Fallback: look up attendees directly from the database using entry email
-		// This is needed because GF feed processing may run AFTER confirmation generation
-		if ( empty( $attendee_ids ) ) {
-			$email = '';
-			foreach ( $form['fields'] as $field ) {
-				if ( $field->type === 'email' ) {
-					$email = rgar( $entry, strval( $field->id ) );
-					break;
-				}
-			}
-
-			if ( ! empty( $email ) ) {
-				// Find the attendee(s) created for this email (most recent first)
-				$attendees = $wpdb->get_col( $wpdb->prepare(
-					"SELECT id FROM $table_attendees WHERE email = %s ORDER BY id DESC LIMIT 5",
-					$email
-				) );
-				if ( ! empty( $attendees ) ) {
-					$attendee_ids = $attendees;
-				}
-			}
-		}
-
-		// Also check entry notes as another fallback
+		// Fallback: check this entry's notes for "Created Attendee ID"
+		// The feed's process_feed writes a note to the GF entry when it creates an attendee
 		if ( empty( $attendee_ids ) && class_exists( 'GFAPI' ) ) {
 			$notes = GFAPI::get_notes( $entry['id'] );
 			if ( ! is_wp_error( $notes ) ) {
