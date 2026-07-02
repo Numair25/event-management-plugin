@@ -38,6 +38,10 @@ class EMP_GF_Integration {
 		add_action( 'gform_delete_entry', array( $this, 'sync_delete_entry' ) );
 	}
 
+	public function clear_attendee_cache() {
+		self::$last_attendee_ids = array();
+	}
+
 	public function validate_duplicate_attendee( $validation_result ) {
 		$form = $validation_result['form'];
 		
