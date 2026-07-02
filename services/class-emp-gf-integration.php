@@ -240,16 +240,12 @@ class EMP_GF_Integration {
 				$comms = new EMP_Communications();
 				$whatsapp_link = $comms->get_whatsapp_link( $attendee_id );
 				
-				if ( $attendee->payment_status === 'paid' || $attendee->payment_status === 'comp' ) {
-					$download_url = home_url( '/?emp_download_badge=' . $attendee->qr_token );
-					$download_html .= '<p style="margin-bottom: 10px;"><strong>' . esc_html( $attendee->name ) . '</strong></p>';
-					$download_html .= '<p>';
-					$download_html .= '<a href="' . esc_url( $download_url ) . '" class="button button-primary" style="background:#0073aa; color:#fff; padding:8px 15px; text-decoration:none; border-radius:4px; display:inline-block; margin-right:10px;" target="_blank">' . __( 'Download PDF', 'event-management-plugin' ) . '</a>';
-					$download_html .= '<a href="' . esc_url( $whatsapp_link ) . '" class="button button-secondary" style="background:#25D366; color:#fff; padding:8px 15px; text-decoration:none; border-radius:4px; display:inline-block;" target="_blank">' . __( 'Send to WhatsApp', 'event-management-plugin' ) . '</a>';
-					$download_html .= '</p>';
-				} else {
-					$download_html .= '<p><strong>' . esc_html( $attendee->name ) . ':</strong> ' . __( 'Your badge will be available to download once payment is completed.', 'event-management-plugin' ) . '</p>';
-				}
+				$download_url = home_url( '/?emp_download_badge=' . $attendee->qr_token );
+				$download_html .= '<p style="margin-bottom: 10px;"><strong>' . esc_html( $attendee->name ) . '</strong></p>';
+				$download_html .= '<p>';
+				$download_html .= '<a href="' . esc_url( $download_url ) . '" class="button button-primary" style="background:#0073aa; color:#fff; padding:8px 15px; text-decoration:none; border-radius:4px; display:inline-block; margin-right:10px;" target="_blank">' . __( 'Download PDF', 'event-management-plugin' ) . '</a>';
+				$download_html .= '<a href="' . esc_url( $whatsapp_link ) . '" class="button button-secondary" style="background:#25D366; color:#fff; padding:8px 15px; text-decoration:none; border-radius:4px; display:inline-block;" target="_blank">' . __( 'Send to WhatsApp', 'event-management-plugin' ) . '</a>';
+				$download_html .= '</p>';
 			}
 		}
 		

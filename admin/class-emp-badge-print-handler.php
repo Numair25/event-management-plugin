@@ -15,13 +15,13 @@ class EMP_Badge_Print_Handler {
 
 			if ( isset( $_GET['attendee_id'] ) ) {
 				$attendee_id = intval( $_GET['attendee_id'] );
-				$generator->generate_individual( $attendee_id, 'D' ); // D = Download
+				$generator->generate_individual( $attendee_id, 'I' ); // 'I' = Inline
 				exit;
 			}
 			
 			if ( isset( $_GET['ticket_type_id'] ) ) {
 				$ticket_type_id = intval( $_GET['ticket_type_id'] );
-				$success = $generator->generate_bulk( $ticket_type_id, 'D' );
+				$success = $generator->generate_bulk( $ticket_type_id, 'I' );
 				if ( ! $success ) {
 					wp_die( __( 'No unprinted badges found for this ticket type.', 'event-management-plugin' ) );
 				}
