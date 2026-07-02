@@ -182,9 +182,9 @@ class EMP_Badge_Generator {
 						$size = isset( $line['size'] ) ? floatval( $line['size'] ) : 12;
 
 						if ( $is_image ) {
-							// Render image field: fit image inside the box
+							// Render image field: fit image inside the box, preserve aspect ratio
 							$html .= '<div style="position: absolute; left: ' . $x . 'mm; top: ' . $y . 'mm; width: ' . $w . 'mm; height: ' . $h . 'mm; z-index: 2; overflow: hidden; text-align: center;">';
-							$html .= '<img src="' . esc_url( $value ) . '" style="width: 100%; height: 100%; display: block; margin: 0; padding: 0;" />';
+							$html .= '<img src="' . esc_url( $value ) . '" style="max-width: ' . $w . 'mm; max-height: ' . $h . 'mm; display: block; margin: 0 auto;" />';
 							$html .= '</div>';
 						} else {
 							// Render text field: auto-fit font to box
@@ -192,8 +192,8 @@ class EMP_Badge_Generator {
 							$max_pt = $h * 2.83; // 1mm ≈ 2.83pt
 							if ( $size > $max_pt ) $size = $max_pt;
 							
-							// Auto-fit font to width (approximate character width is 0.55 of font size)
-							$char_width_factor = 0.55;
+							// Auto-fit font to width (bold sans-serif characters are wide)
+							$char_width_factor = 0.85;
 							$estimated_text_width_pt = strlen( $value ) * $size * $char_width_factor;
 							$box_width_pt = $w * 2.83;
 							
@@ -204,7 +204,8 @@ class EMP_Badge_Generator {
 							if ( $size > 24 ) $size = 24; // Hard cap at 24pt
 							if ( $size < 6 ) $size = 6;   // Minimum readable
 
-							$html .= '<div style="position: absolute; left: ' . $x . 'mm; top: ' . $y . 'mm; width: ' . $w . 'mm; height: ' . $h . 'mm; z-index: 2; overflow: hidden; text-align: center; font-size: ' . $size . 'pt; font-weight: bold; color: #333; font-family: sans-serif; line-height: ' . $h . 'mm; white-space: nowrap; text-overflow: hidden;">';
+							// Add max-width/max-height and nowrap to definitively prevent overlap
+							$html .= '<div style="position: absolute; left: ' . $x . 'mm; top: ' . $y . 'mm; width: ' . $w . 'mm; height: ' . $h . 'mm; z-index: 2; overflow: hidden; text-align: center; font-size: ' . $size . 'pt; font-weight: bold; color: #333; font-family: sans-serif; line-height: ' . $h . 'mm; white-space: nowrap;">';
 							$html .= $value;
 							$html .= '</div>';
 						}
