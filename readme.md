@@ -72,5 +72,5 @@ Go to **Events > Scan Points**. Create zones where attendees will be scanned (e.
 ## Technical Notes
 - Requires PHP 7.4+
 - Requires Gravity Forms (Optional for basic features, but highly recommended).
-- PDF Generation utilizes TCPDF.
+- PDF Generation utilizes mPDF.
 - Audit logs track all financial markings and manual check-ins in the `wp_emp_audit_logs` table.

@@ -111,8 +111,10 @@ class EMP_Communications {
 			$attendee = $wpdb->get_row( $wpdb->prepare( "SELECT id, printed_status FROM {$table_attendees} WHERE qr_token = %s", $token ) );
 			
 			if ( $attendee ) {
-				// Remove single-download restriction to allow multiple downloads
-
+				// Single download restriction
+				if ( $attendee->printed_status == 1 ) {
+					wp_die( __( 'This badge has already been downloaded. You can only download your badge once.', 'event-management-plugin' ) );
+				}
 				// Mark as downloaded
 				$wpdb->update( 
 					$table_attendees, 
