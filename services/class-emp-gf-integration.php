@@ -23,6 +23,7 @@ class EMP_GF_Integration {
 
 		// Auto-create attendee if form is linked directly to an event (no feed required)
 		add_action( 'gform_entry_post_save', array( $this, 'auto_create_attendee_for_linked_form' ), 5, 2 );
+		add_action( 'gform_pre_submission', array( $this, 'clear_attendee_cache' ) );
 
 		// Currency settings
 		add_filter( 'gform_currencies', array( $this, 'add_inr_currency' ) );
@@ -208,8 +209,8 @@ class EMP_GF_Integration {
 		// Fallback: check this entry's notes for "Created Attendee ID"
 		// The feed's process_feed writes a note to the GF entry when it creates an attendee
 		if ( empty( $attendee_ids ) && class_exists( 'GFAPI' ) ) {
-			$notes = GFAPI::get_notes( $entry['id'] );
-			if ( ! is_wp_error( $notes ) ) {
+			$notes = GFAPI::get_notes( array( 'entry_id' => $entry['id'] ) );
+			if ( is_array( $notes ) && ! is_wp_error( $notes ) ) {
 				foreach ( $notes as $note ) {
 					if ( preg_match( '/Created Attendee ID: (\d+)/', $note->value, $matches ) ) {
 						$attendee_ids[] = intval( $matches[1] );
@@ -259,13 +260,14 @@ class EMP_GF_Integration {
 	public function handle_payment_action( $entry, $action ) {
 		// $action['type'] can be 'complete_payment', 'refund_payment', 'fail_payment', etc.
 		// We need to find the attendee associated with this entry.
-		
-		$notes = GFAPI::get_notes( $entry['id'] );
 		$attendee_id = 0;
-		foreach ( $notes as $note ) {
-			if ( preg_match( '/Created Attendee ID: (\d+)/', $note->value, $matches ) ) {
-				$attendee_id = intval( $matches[1] );
-				break;
+		$notes = GFAPI::get_notes( array( 'entry_id' => $entry['id'] ) );
+		if ( is_array( $notes ) && ! is_wp_error( $notes ) ) {
+			foreach ( $notes as $note ) {
+				if ( preg_match( '/Created Attendee ID: (\d+)/', $note->value, $matches ) ) {
+					$attendee_id = intval( $matches[1] );
+					break;
+				}
 			}
 		}
 
