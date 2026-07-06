@@ -37,12 +37,67 @@ class EMP_GF_Addon extends GFFeedAddOn {
 
 	public function feed_settings_fields() {
 		$event_choices = $this->get_events_choices();
-		$valid_event_ids = array();
-		foreach ( $event_choices as $choice ) {
-			if ( $choice['value'] !== '' ) {
-				$valid_event_ids[] = $choice['value'];
+		// Build a JS map of event IDs to ticket type choices
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'emp_ticket_types';
+		$ticket_results = $wpdb->get_results( "SELECT * FROM $table_name" );
+		
+		$ticket_map_js = "var empTicketMap = {";
+		$events_with_tickets = array();
+		if ( $ticket_results ) {
+			foreach ( $ticket_results as $row ) {
+				if ( ! isset( $events_with_tickets[ $row->event_id ] ) ) {
+					$events_with_tickets[ $row->event_id ] = array();
+				}
+				$events_with_tickets[ $row->event_id ][] = array( 'id' => $row->id, 'name' => addslashes($row->name) );
 			}
 		}
+		foreach ( $events_with_tickets as $eid => $tickets ) {
+			$ticket_map_js .= "'{$eid}': [";
+			foreach ( $tickets as $t ) {
+				$ticket_map_js .= "{id: '{$t['id']}', name: '{$t['name']}'},";
+			}
+			$ticket_map_js .= "],";
+		}
+		$ticket_map_js .= "};";
+
+		$filter_script = "
+		<script>
+		jQuery(document).ready(function($) {
+			{$ticket_map_js}
+			var eventSelect = $('#event_id');
+			var ticketSelect = $('#ticket_type_id');
+			
+			// Store the initially selected ticket to preserve it on edit
+			var initialTicketId = ticketSelect.val();
+			
+			function updateTicketDropdown() {
+				var eventId = eventSelect.val();
+				var tr = ticketSelect.closest('tr');
+				
+				ticketSelect.empty();
+				ticketSelect.append('<option value=\"\">-- Select a Ticket Type --</option>');
+				
+				if (eventId && empTicketMap[eventId]) {
+					tr.show();
+					$.each(empTicketMap[eventId], function(i, ticket) {
+						var selected = (initialTicketId == ticket.id) ? 'selected' : '';
+						ticketSelect.append('<option value=\"' + ticket.id + '\" ' + selected + '>' + ticket.name + '</option>');
+					});
+				} else {
+					tr.hide();
+				}
+				// Clear the initial ticket ID after first load so subsequent changes don't force it
+				initialTicketId = null;
+			}
+			
+			eventSelect.on('change', updateTicketDropdown);
+			
+			// Run on load
+			setTimeout(updateTicketDropdown, 100);
+		});
+		</script>
+		";
 
 		return array(
 			array(
@@ -61,10 +116,11 @@ class EMP_GF_Addon extends GFFeedAddOn {
 						'type'       => 'select',
 						'choices'    => $this->get_ticket_types_choices(),
 						'tooltip'    => __( 'Select the ticket type for attendees created from this feed.', 'event-management-plugin' ),
-						'dependency' => array(
-							'field'  => 'event_id',
-							'values' => $valid_event_ids,
-						),
+					),
+					array(
+						'name' => 'ticket_filter_script',
+						'type' => 'html',
+						'html' => $filter_script
 					),
 				),
 			),
