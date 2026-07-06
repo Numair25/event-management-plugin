@@ -13,6 +13,7 @@ A comprehensive WordPress plugin for managing physical events, handling walk-in 
    - Automatically ingest attendees upon Gravity Form submission.
    - Map core attendee data (Name, Email, Organization) and capture all custom fields.
    - Generate custom physical badges dynamically populated with Gravity Forms data.
+   - Secure single-download restriction for PDF badges to prevent unauthorized copying.
 
 3. **Dynamic Badge Designer**
    - Visual drag-and-drop badge builder in the backend.
@@ -28,6 +29,7 @@ A comprehensive WordPress plugin for managing physical events, handling walk-in 
 
 5. **Access Control & QR Scanning**
    - Secure frontend QR Scanner accessible only to designated "Scanner" roles.
+   - Sleek modal popups (via SweetAlert2) for instant scan results without scrolling.
    - Supports multiple Scan Points (e.g., Main Entrance, VIP Lounge, Lunch Hall).
    - Real-time validation prevents double-entry and validates ticket types against scan points.
    - Emits audible success/failure beeps.

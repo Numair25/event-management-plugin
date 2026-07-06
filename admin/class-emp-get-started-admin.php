@@ -119,7 +119,7 @@ class EMP_Get_Started_Admin {
 				<div class="emp-step-number">7</div>
 				<div class="emp-step-content">
 					<h3>Run Your Event On-Site</h3>
-					<p>When the event begins, use the Walk-In Kiosk to quickly register attendees paying at the door and print their badges instantly. Provide your door staff with the URL to the Frontend QR Scanner so they can scan attendees in!</p>
+					<p>When the event begins, use the Walk-In Kiosk to quickly register attendees paying at the door and print their badges instantly. Provide your door staff with the URL to the Frontend QR Scanner so they can scan attendees in! The scanner features an instant popup interface, allowing staff to scan continuously without touching the screen.</p>
 					<a href="<?php echo admin_url('edit.php?post_type=emp_event&page=emp-kiosk'); ?>" class="button button-primary">Open Walk-In Kiosk</a>
 					<a href="<?php echo site_url('/scanner-access/'); ?>" target="_blank" class="button button-secondary">Open QR Scanner Page</a>
 				</div>
