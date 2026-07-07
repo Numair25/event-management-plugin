@@ -230,8 +230,14 @@ class EMP_GF_Integration {
 			return $confirmation;
 		}
 
+		// Prevent duplicate injection if GF calls this filter multiple times
+		if ( is_string( $confirmation ) && strpos( $confirmation, 'emp-instant-download' ) !== false ) {
+			return $confirmation;
+		}
+
 		$download_html = '<div class="emp-instant-download" style="margin-top: 20px; padding: 20px; background: #f9f9f9; border-left: 4px solid #0073aa; border-radius: 4px;">';
 		$download_html .= '<h4>' . __( 'Download Your Badge(s)', 'event-management-plugin' ) . '</h4>';
+		$download_html .= '<p style="font-size: 13px; color: #d63638;"><strong>' . __( 'SECURITY NOTICE: You can only download your badge ONCE.', 'event-management-plugin' ) . '</strong> ' . __( 'We recommend downloading it now. If you choose to share it to WhatsApp instead, the link will expire as soon as it is opened.', 'event-management-plugin' ) . '</p>';
 		
 		foreach ( $attendee_ids as $attendee_id ) {
 			$attendee = $wpdb->get_row( $wpdb->prepare( "SELECT name, qr_token, payment_status FROM $table_attendees WHERE id = %d", $attendee_id ) );
@@ -243,21 +249,15 @@ class EMP_GF_Integration {
 				$download_url = home_url( '/?emp_download_badge=' . $attendee->qr_token );
 				$download_html .= '<p style="margin-bottom: 10px;"><strong>' . esc_html( $attendee->name ) . '</strong></p>';
 				$download_html .= '<p>';
-				$download_html .= '<a href="' . esc_url( $download_url ) . '" class="button button-primary" style="background:#0073aa; color:#fff; padding:8px 15px; text-decoration:none; border-radius:4px; display:inline-block; margin-right:10px;" target="_blank">' . __( 'Download PDF', 'event-management-plugin' ) . '</a>';
-				$download_html .= '<a href="' . esc_url( $whatsapp_link ) . '" class="button button-secondary" style="background:#25D366; color:#fff; padding:8px 15px; text-decoration:none; border-radius:4px; display:inline-block;" target="_blank">' . __( 'Send to WhatsApp', 'event-management-plugin' ) . '</a>';
+				$download_html .= '<a href="' . esc_url( $download_url ) . '" class="button button-primary" style="background:#0073aa; color:#fff; padding:8px 15px; text-decoration:none; border-radius:4px; display:inline-block; margin-right:10px;" target="_blank">' . __( 'Download PDF (Recommended)', 'event-management-plugin' ) . '</a>';
+				$download_html .= '<a href="' . esc_url( $whatsapp_link ) . '" class="button button-secondary" style="background:#25D366; color:#fff; padding:8px 15px; text-decoration:none; border-radius:4px; display:inline-block;" target="_blank">' . __( 'Share Link to WhatsApp', 'event-management-plugin' ) . '</a>';
 				$download_html .= '</p>';
 			}
 		}
 		
 		$download_html .= '</div>';
 
-		if ( is_string( $confirmation ) ) {
-			return $confirmation . $download_html;
-		} elseif ( is_array( $confirmation ) && isset( $confirmation['redirect'] ) ) {
-			return $confirmation;
-		}
-
-		return $confirmation;
+		return is_string( $confirmation ) ? $confirmation . $download_html : $download_html;
 	}
 
 	public function handle_payment_action( $entry, $action ) {

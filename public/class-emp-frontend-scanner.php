@@ -20,36 +20,120 @@ class EMP_Frontend_Scanner {
 		
 		ob_start();
 		?>
-		<div class="emp-frontend-scanner-wrapper" style="max-width: 600px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center;">
+		<style>
+			.emp-frontend-scanner-wrapper {
+				max-width: 600px;
+				margin: 40px auto;
+				background: #ffffff;
+				padding: 30px;
+				border-radius: 12px;
+				box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+				text-align: center;
+				font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+			}
+			.emp-frontend-scanner-wrapper h1 {
+				margin-top: 0;
+				font-size: 24px;
+				color: #2c3338;
+				margin-bottom: 25px;
+			}
+			.emp-frontend-scanner-wrapper select, 
+			.emp-frontend-scanner-wrapper input[type="text"] {
+				width: 100%;
+				padding: 12px 15px;
+				margin-bottom: 20px;
+				border: 1px solid #ccd0d4;
+				border-radius: 6px;
+				font-size: 16px;
+				box-sizing: border-box;
+			}
+			.emp-frontend-scanner-wrapper .emp-btn {
+				background: #0073aa;
+				color: #ffffff;
+				border: none;
+				border-radius: 6px;
+				padding: 14px 20px;
+				font-size: 16px;
+				font-weight: 600;
+				cursor: pointer;
+				width: 100%;
+				transition: background 0.3s;
+			}
+			.emp-frontend-scanner-wrapper .emp-btn:hover:not(:disabled) {
+				background: #005177;
+			}
+			.emp-frontend-scanner-wrapper .emp-btn:disabled {
+				background: #a0a5aa;
+				cursor: not-allowed;
+			}
+			.emp-frontend-scanner-wrapper .emp-btn-secondary {
+				background: #f0f0f1;
+				color: #2c3338;
+				border: 1px solid #8c8f94;
+			}
+			.emp-frontend-scanner-wrapper .emp-btn-secondary:hover {
+				background: #dcdcde;
+			}
+			.emp-manual-result-card {
+				border: 1px solid #e2e4e7;
+				padding: 15px;
+				margin-bottom: 15px;
+				border-radius: 8px;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				background: #fafafa;
+				text-align: left;
+			}
+			.emp-manual-result-card-info strong {
+				font-size: 16px;
+				color: #1d2327;
+			}
+			.emp-manual-result-card-info span {
+				display: block;
+				font-size: 13px;
+				color: #646970;
+				margin-top: 4px;
+			}
+			#reader {
+				border: none !important;
+				border-radius: 12px;
+				overflow: hidden;
+				box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+				margin-bottom: 25px;
+			}
+		</style>
+		<div class="emp-frontend-scanner-wrapper">
 			<h1><?php _e( 'Event Check-in Scanner', 'event-management-plugin' ); ?></h1>
 			
 			<div id="setup-view">
-				<h3><?php _e( 'Select Event', 'event-management-plugin' ); ?></h3>
-				<select id="event-select" style="width: 100%; padding: 10px; margin-bottom: 20px;">
+				<h3 style="margin-bottom: 10px; font-size: 16px; color: #3c434a; text-align: left;"><?php _e( 'Select Event', 'event-management-plugin' ); ?></h3>
+				<select id="event-select">
 					<option value="">-- <?php _e( 'Select an Event', 'event-management-plugin' ); ?> --</option>
 				</select>
 
 				<div id="scan-point-wrapper" style="display: none;">
-					<h3><?php _e( 'Select Scan Point (Station)', 'event-management-plugin' ); ?></h3>
-					<select id="scan-point-select" style="width: 100%; padding: 10px; margin-bottom: 20px;"></select>
+					<h3 style="margin-bottom: 10px; font-size: 16px; color: #3c434a; text-align: left;"><?php _e( 'Select Scan Point (Station)', 'event-management-plugin' ); ?></h3>
+					<select id="scan-point-select"></select>
 				</div>
 				
-				<button id="start-scanning-btn" class="button button-primary" style="width: 100%; padding: 15px; font-size: 18px;" disabled><?php _e( 'Start Scanning', 'event-management-plugin' ); ?></button>
+				<button id="start-scanning-btn" class="emp-btn" disabled><?php _e( 'Start Scanning', 'event-management-plugin' ); ?></button>
 			</div>
 			
 			<div id="scanner-view" style="display: none;">
-				<h3 id="current-station-name"></h3>
-				<button id="stop-scanning-btn" class="button" style="margin-bottom: 15px;"><?php _e( 'Change Station', 'event-management-plugin' ); ?></button>
+				<h3 id="current-station-name" style="margin-top:0; color:#0073aa;"></h3>
+				<button id="stop-scanning-btn" class="emp-btn emp-btn-secondary" style="margin-bottom: 20px; width: auto; padding: 8px 15px; font-size: 14px;"><?php _e( 'Change Station', 'event-management-plugin' ); ?></button>
 				
-				<div id="reader" style="width: 100%; min-height: 300px; border: 2px solid #ccc; margin-bottom: 20px;"></div>
+				<div id="reader" style="width: 100%; min-height: 300px; background:#000;"></div>
 				
-				<div id="scan-result" style="padding: 15px; border-radius: 5px; margin-bottom: 20px; display: none;"></div>
+				<hr style="border: 0; border-top: 1px solid #ccd0d4; margin: 30px 0;"/>
 				
-				<hr/>
-				<h4><?php _e( 'Manual Lookup', 'event-management-plugin' ); ?></h4>
-				<input type="text" id="manual-query" placeholder="<?php esc_attr_e( 'Search by Name or Email...', 'event-management-plugin' ); ?>" style="width: 70%; padding: 10px;" />
-				<button id="manual-search-btn" class="button" style="padding: 10px;"><?php _e( 'Search', 'event-management-plugin' ); ?></button>
-				<div id="manual-results" style="margin-top: 15px; text-align: left;"></div>
+				<h4 style="text-align: left; margin-bottom: 15px; font-size: 18px;"><?php _e( 'Manual Lookup', 'event-management-plugin' ); ?></h4>
+				<div style="display: flex; gap: 10px; margin-bottom: 20px;">
+					<input type="text" id="manual-query" placeholder="<?php esc_attr_e( 'Search by Name or Email...', 'event-management-plugin' ); ?>" style="margin-bottom: 0;" />
+					<button id="manual-search-btn" class="emp-btn" style="width: auto; padding: 12px 20px;"><?php _e( 'Search', 'event-management-plugin' ); ?></button>
+				</div>
+				<div id="manual-results"></div>
 			</div>
 		</div>
 
@@ -238,12 +322,12 @@ class EMP_Frontend_Scanner {
 				}).done(function( attendees ) {
 					let html = '';
 					if (attendees.length === 0) {
-						html = 'No results found.';
+						html = '<p style="color: #646970;">No results found.</p>';
 					} else {
 						attendees.forEach(function(a) {
-							html += '<div style="border:1px solid #ddd; padding:10px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">';
-							html += '<div><strong>'+a.name+'</strong><br/>'+a.email+'<br/>Status: '+a.status+'</div>';
-							html += '<button class="button manual-checkin-btn" data-token="'+a.token+'">Check-in</button>';
+							html += '<div class="emp-manual-result-card">';
+							html += '<div class="emp-manual-result-card-info"><strong>'+a.name+'</strong><span>'+a.email+'</span><span>Status: '+a.status+'</span></div>';
+							html += '<button class="emp-btn manual-checkin-btn" style="width: auto; padding: 10px 15px;" data-token="'+a.token+'">Check-in</button>';
 							html += '</div>';
 						});
 					}

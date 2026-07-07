@@ -114,9 +114,20 @@ class EMP_Kiosk_Admin {
 			}
 			
 			// Fallbacks if not found
-			if ( empty( $name ) ) $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : 'Walk-in Attendee';
-			if ( empty( $email ) ) $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : 'walkin_' . time() . '@example.com';
+			if ( empty( $name ) && isset($_POST['name']) ) $name = sanitize_text_field($_POST['name']);
+			if ( empty( $email ) && isset($_POST['email']) ) $email = sanitize_email($_POST['email']);
 			if ( empty( $organization ) ) $organization = isset($_POST['organization']) ? sanitize_text_field($_POST['organization']) : '';
+			
+			// Validate that we have at least SOME identifying info
+			if ( empty( trim( $name ) ) && empty( trim( $email ) ) ) {
+				echo '<div class="notice notice-error is-dismissible"><p>' . __( 'Error: You must provide at least a Name or an Email address to register an attendee.', 'event-management-plugin' ) . '</p></div>';
+				$this->render_form();
+				return;
+			}
+			
+			// Set defaults if one is missing but the other is present
+			if ( empty( $name ) ) $name = 'Walk-in Attendee';
+			if ( empty( $email ) ) $email = 'walkin_' . time() . '@example.com';
 			
 			// Handle photo upload
 			$photo_path = '';

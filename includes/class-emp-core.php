@@ -96,6 +96,7 @@ class EMP_Core {
 		require_once EMP_PLUGIN_DIR . 'admin/class-emp-settings-admin.php';
 		$plugin_settings_admin = new EMP_Settings_Admin();
 		$this->loader->add_action( 'admin_menu', $plugin_settings_admin, 'register_menu' );
+		$this->loader->add_action( 'wp_ajax_emp_global_search', $plugin_settings_admin, 'ajax_global_search' );
 
 		require_once EMP_PLUGIN_DIR . 'services/class-emp-gf-integration.php';
 		$plugin_gf_integration = new EMP_GF_Integration();

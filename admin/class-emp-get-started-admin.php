@@ -75,7 +75,7 @@ class EMP_Get_Started_Admin {
 				<div class="emp-step-number">2</div>
 				<div class="emp-step-content">
 					<h3>Create Your Event</h3>
-					<p>Go to the Events tab and add a new Event. You will define the capacity limit, select the Gravity Form you created in Step 1, and define the physical dimensions for your printed badges.</p>
+					<p>Go to the Events tab and add a new Event. On the event creation page, scroll down to the <strong>Event Configuration</strong> box. Here you will define the capacity limit, select the Gravity Form you created in Step 1 from the dropdown menu, and define the physical dimensions for your printed badges.</p>
 					<a href="<?php echo admin_url('post-new.php?post_type=emp_event'); ?>" class="button button-primary">Add New Event</a>
 				</div>
 			</div>
@@ -93,7 +93,12 @@ class EMP_Get_Started_Admin {
 				<div class="emp-step-number">4</div>
 				<div class="emp-step-content">
 					<h3>Link Gravity Forms to Event Fields</h3>
-					<p>Go to your Gravity Form's settings menu, select <strong>EMP Integration</strong>, and create a Feed. This tells the plugin which Gravity Form fields correspond to the attendee's Name, Email, and Photo. This step is crucial for automatic badge generation!</p>
+					<p>Go to your Gravity Form's menu, click <strong>Settings</strong> at the top, and select <strong>Event Management</strong>. Create a Feed to tell the plugin which Gravity Form fields correspond to the attendee's Name, Email, and Photo. This step is crucial for automatic badge generation!</p>
+					
+					<div style="background: #f0f6fc; border-left: 4px solid #0366d6; padding: 10px 15px; margin-top: 15px;">
+						<strong>💡 Tip: Using Conditional Logic for Multiple Tickets</strong>
+						<p style="margin-bottom: 0;">If your form sells multiple tickets (e.g., General, VIP, Premium), you need to create a Dropdown field in your Gravity Form for the user to select their ticket. Then, under <em>Event Management</em> settings, create a separate Feed for <em>each</em> ticket type. For each feed, enable Gravity Forms' <strong>Conditional Logic</strong> checkbox at the bottom to say: <em>"Only process this feed if the Ticket Dropdown is [VIP]"</em>. This ensures the attendee is assigned the correct Ticket Type!</p>
+					</div>
 				</div>
 			</div>
 
