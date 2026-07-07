@@ -111,46 +111,6 @@ class EMP_Frontend_Scanner {
 				overflow: hidden;
 				box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 				margin-bottom: 25px;
-				background: #ffffff;
-				padding-bottom: 15px;
-			}
-			
-			/* html5-qrcode overrides */
-			#reader select {
-				width: 90% !important;
-				padding: 12px 15px !important;
-				margin: 15px auto !important;
-				display: block !important;
-				border: 1px solid #ccd0d4 !important;
-				border-radius: 6px !important;
-				font-size: 16px !important;
-				background-color: #f8f9fa !important;
-				color: #2c3338 !important;
-				box-sizing: border-box !important;
-			}
-			#reader button {
-				background: #0073aa !important;
-				color: #ffffff !important;
-				border: none !important;
-				border-radius: 6px !important;
-				padding: 12px 20px !important;
-				font-size: 16px !important;
-				font-weight: 600 !important;
-				cursor: pointer !important;
-				width: 90% !important;
-				margin: 10px auto !important;
-				display: block !important;
-				box-sizing: border-box !important;
-			}
-			#reader a {
-				color: #0073aa !important;
-				text-decoration: none !important;
-				font-size: 14px !important;
-				display: inline-block !important;
-				margin-bottom: 10px !important;
-			}
-			#reader span {
-				color: #3c434a !important;
 			}
 		</style>
 		<div class="emp-frontend-scanner-wrapper">
@@ -197,7 +157,7 @@ class EMP_Frontend_Scanner {
 			
 			const restUrl = '<?php echo $rest_url; ?>';
 			const nonce = '<?php echo $nonce; ?>';
-			let html5QrcodeScanner = null;
+			let html5QrCode = null;
 			let currentPointId = null;
 			let isProcessing = false;
 
@@ -262,24 +222,39 @@ class EMP_Frontend_Scanner {
 			});
 
 			$('#stop-scanning-btn').click(function() {
-				if (html5QrcodeScanner) {
-					html5QrcodeScanner.clear();
+				if (html5QrCode) {
+					html5QrCode.stop().then(() => {
+						html5QrCode.clear();
+					}).catch(err => {
+						console.log("Failed to stop scanner", err);
+					});
 				}
 				$('#scanner-view').hide();
 				$('#setup-view').show();
 			});
 
 			function startScanner() {
-				html5QrcodeScanner = new Html5QrcodeScanner( "reader", { fps: 10, qrbox: {width: 250, height: 250} }, false );
-				html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+				html5QrCode = new Html5Qrcode("reader");
+				html5QrCode.start(
+					{ facingMode: "environment" }, 
+					{
+						fps: 10, 
+						qrbox: { width: 250, height: 250 }
+					},
+					onScanSuccess,
+					onScanFailure
+				).catch(err => {
+					console.log("Error starting scanner", err);
+					alert("Could not start camera. Please ensure camera permissions are granted.");
+				});
 			}
 
 			function onScanSuccess(decodedText, decodedResult) {
 				if (isProcessing) return;
 				isProcessing = true;
 				
-				if (html5QrcodeScanner) {
-					html5QrcodeScanner.pause();
+				if (html5QrCode) {
+					html5QrCode.pause();
 				}
 
 				processToken(decodedText);
@@ -349,8 +324,8 @@ class EMP_Frontend_Scanner {
 			}
 
 			function resumeScanner() {
-				if (html5QrcodeScanner) {
-					html5QrcodeScanner.resume();
+				if (html5QrCode) {
+					html5QrCode.resume();
 				}
 				isProcessing = false;
 			}
