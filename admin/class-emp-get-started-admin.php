@@ -140,6 +140,20 @@ class EMP_Get_Started_Admin {
 				</div>
 			</div>
 
+			<div class="emp-step-card">
+				<div class="emp-step-number">9</div>
+				<div class="emp-step-content">
+					<h3>Manage Your Team (User Roles)</h3>
+					<p>The plugin includes 3 custom user roles to securely delegate tasks to your staff:</p>
+					<ul style="list-style-type: disc; margin-left: 20px; margin-top: 10px;">
+						<li><strong>Event Organizer:</strong> Has full access to everything in the plugin (settings, badges, forms, financial dashboards).</li>
+						<li><strong>Registration Staff:</strong> Can access the Walk-In Kiosk to register attendees and print badges, but cannot see financial data or change settings.</li>
+						<li><strong>Scanning Staff:</strong> Can only access the Frontend QR Scanner to scan attendees at the door. They have no access to the WordPress admin area.</li>
+					</ul>
+					<a href="<?php echo admin_url('users.php'); ?>" class="button button-secondary">Manage Users</a>
+				</div>
+			</div>
+
 		</div>
 		<?php
 	}
