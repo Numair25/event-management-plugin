@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Event Management & Check-In Plugin
- * Plugin URI:  https://example.com/
+ * Plugin URI:  https://standardtouch.com
  * Description: Manages the full lifecycle of an in-person event: registration, payments, photo badges, on-site QR check-in, communications, and reporting. Requires Gravity Forms.
  * Version:     1.0.0
  * Author:      StandardTouch
