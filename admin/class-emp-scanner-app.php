@@ -57,6 +57,7 @@ class EMP_Scanner_App {
 
 		<!-- Load html5-qrcode -->
 		<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+		<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 		
 		<script>
 		jQuery(document).ready(function($) {
@@ -155,7 +156,13 @@ class EMP_Scanner_App {
 			}
 
 			function processToken(token) {
-				$('#scan-result').show().removeClass('updated error').css('background', '#fff3cd').html('<h3>Processing...</h3>');
+				Swal.fire({
+					title: 'Processing...',
+					allowOutsideClick: false,
+					didOpen: () => {
+						Swal.showLoading();
+					}
+				});
 				
 				$.ajax({
 					url: restUrl + 'scan',
@@ -170,46 +177,47 @@ class EMP_Scanner_App {
 				}).done(function( response ) {
 					showResult(response);
 				}).fail(function( jqXHR ) {
-					$('#scan-result').addClass('error').html('<h3>Error</h3><p>' + jqXHR.responseJSON.message + '</p>');
-					resumeScanner();
+					Swal.fire({
+						icon: 'error',
+						title: 'Error',
+						text: jqXHR.responseJSON ? jqXHR.responseJSON.message : 'Connection Error',
+						willClose: () => {
+							resumeScanner();
+						}
+					});
 				});
 			}
 
 			function showResult(response) {
-				const resultBox = $('#scan-result');
-				resultBox.removeClass('updated error');
+				let icon = response.success ? 'success' : 'error';
+				let title = response.success ? 'Access Granted' : 'Access Denied';
 				
-				let html = '<h3>' + (response.success ? 'Access Granted' : 'Access Denied') + '</h3>';
-				html += '<p><strong>' + response.message + '</strong></p>';
-				
+				let html = '<p><strong>' + response.message + '</strong></p>';
 				if (response.attendee) {
-					html += '<div style="margin-top:10px; display:flex; align-items:center; justify-content:center;">';
+					html += '<div style="margin-top:15px; display:flex; align-items:center; justify-content:center; text-align:left; background: #f8f9fa; padding: 15px; border-radius: 8px;">';
 					if (response.attendee.photo_url) {
-						html += '<img src="'+response.attendee.photo_url+'" style="width:80px; height:80px; border-radius:50%; margin-right:15px; object-fit:cover;" />';
+						html += '<img src="'+response.attendee.photo_url+'" style="width:80px; height:80px; border-radius:50%; margin-right:15px; object-fit:cover; border: 2px solid #ddd;" />';
 					}
-					html += '<div style="text-align:left;">';
+					html += '<div>';
 					html += '<strong>Name:</strong> ' + response.attendee.name + '<br/>';
-					html += '<strong>Ticket:</strong> ' + response.attendee.ticket_type + '<br/>';
+					html += '<strong>Ticket:</strong> ' + response.attendee.ticket_type;
 					html += '</div></div>';
 				}
 				
-				if (response.success) {
-					resultBox.addClass('updated').css('background', '#d4edda');
-					// Play success sound if needed
-				} else {
-					resultBox.addClass('error').css('background', '#f8d7da');
-					// Play error sound
-				}
-				
-				resultBox.html(html);
-				
-				setTimeout(function() {
-					resumeScanner();
-				}, 3000);
+				Swal.fire({
+					icon: icon,
+					title: title,
+					html: html,
+					timer: 3000,
+					timerProgressBar: true,
+					showConfirmButton: false,
+					willClose: () => {
+						resumeScanner();
+					}
+				});
 			}
 
 			function resumeScanner() {
-				$('#scan-result').hide();
 				if (html5QrcodeScanner) {
 					html5QrcodeScanner.resume();
 				}
