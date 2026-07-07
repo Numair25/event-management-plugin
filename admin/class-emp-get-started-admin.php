@@ -102,7 +102,7 @@ class EMP_Get_Started_Admin {
 				<div class="emp-step-content">
 					<h3>Design the Physical Badge</h3>
 					<p>Use the Badge Designs drag-and-drop builder to layout where text fields and the QR code will print on the badge. You can create a different badge design for each Ticket Type (e.g., a gold badge for VIPs, white for General).</p>
-					<a href="<?php echo admin_url('edit.php?post_type=emp_event&page=emp-badge-designs'); ?>" class="button button-secondary">Design Badges</a>
+					<a href="<?php echo admin_url('edit.php?post_type=emp_event&page=emp-badges'); ?>" class="button button-secondary">Design Badges</a>
 				</div>
 			</div>
 
