@@ -91,7 +91,8 @@ class EMP_REST_Scanner {
 		}
 
 		// Check Repeat Rule
-		if ( $point->rule === 'single' ) {
+		$rule = ! empty( $point->rule ) ? $point->rule : 'single';
+		if ( $rule === 'single' ) {
 			$previous_scan = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $table_logs WHERE attendee_id = %d AND scan_point_id = %d AND result = 'pass'", $attendee->id, $point_id ) );
 			if ( $previous_scan > 0 ) {
 				$this->log_scan( $attendee->id, $point_id, 'fail', 'Already Scanned' );
