@@ -10,7 +10,17 @@ class EMP_Frontend_Scanner {
 
 	public function render_scanner( $atts ) {
 		if ( ! is_user_logged_in() || ! current_user_can( 'scan_attendees' ) ) {
-			return '<p>' . __( 'You must be logged in as Scanning Staff to view this page.', 'event-management-plugin' ) . '</p>';
+			$login_url = wp_login_url( home_url( $_SERVER['REQUEST_URI'] ) );
+			$message = is_user_logged_in() 
+				? __( 'You are logged in, but you do not have permission to scan attendees. Please log in as Scanning Staff.', 'event-management-plugin' )
+				: __( 'You must be logged in as Scanning Staff to view this page.', 'event-management-plugin' );
+				
+			return '
+			<div style="max-width: 500px; margin: 40px auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; border: 1px solid #ccd0d4;">
+				<h2 style="margin-top: 0; color: #d63638;">' . __( 'Access Denied', 'event-management-plugin' ) . '</h2>
+				<p style="font-size: 16px; color: #3c434a; margin-bottom: 25px;">' . $message . '</p>
+				<a href="' . esc_url( $login_url ) . '" style="background: #0073aa; color: #fff; text-decoration: none; padding: 12px 25px; border-radius: 4px; font-weight: bold; display: inline-block;">' . __( 'Log In to Scanner', 'event-management-plugin' ) . '</a>
+			</div>';
 		}
 
 		wp_enqueue_script( 'jquery' );

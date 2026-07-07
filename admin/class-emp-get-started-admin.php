@@ -150,7 +150,11 @@ class EMP_Get_Started_Admin {
 						<li><strong>Registration Staff:</strong> Can access the Walk-In Kiosk to register attendees and print badges, but cannot see financial data or change settings.</li>
 						<li><strong>Scanning Staff:</strong> Can only access the Frontend QR Scanner to scan attendees at the door. They have no access to the WordPress admin area.</li>
 					</ul>
-					<a href="<?php echo admin_url('users.php'); ?>" class="button button-secondary">Manage Users</a>
+					<p style="margin-top: 15px; font-style: italic; color: #555;">
+						<strong>Login Details:</strong> All staff members can log into the system using the standard WordPress login page at: <br/>
+						<code><a href="<?php echo wp_login_url(); ?>" target="_blank"><?php echo wp_login_url(); ?></a></code>
+					</p>
+					<a href="<?php echo admin_url('users.php'); ?>" class="button button-secondary" style="margin-top: 10px;">Manage Users</a>
 				</div>
 			</div>
 
