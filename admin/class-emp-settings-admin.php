@@ -73,6 +73,51 @@ class EMP_Settings_Admin {
 			);
 		}
 
+		// 4. Search Scan Points (by Name)
+		$table_scan_points = $wpdb->prefix . 'emp_scan_points';
+		$scan_points = $wpdb->get_results( $wpdb->prepare( 
+			"SELECT id, name, event_id FROM $table_scan_points WHERE name LIKE %s LIMIT 5", 
+			$search_term 
+		) );
+		foreach ( $scan_points as $point ) {
+			$event_title = get_the_title( $point->event_id );
+			$results[] = array(
+				'type'  => 'Scan Point',
+				'title' => $event_title . ' - ' . $point->name,
+				'url'   => admin_url( 'edit.php?post_type=emp_event&page=emp-scan-points' ) // Settings are event global
+			);
+		}
+
+		// 5. Search Static Admin Pages
+		$admin_pages = array(
+			'Get Started' => admin_url( 'edit.php?post_type=emp_event&page=emp-get-started' ),
+			'Dashboard & Reports' => admin_url( 'edit.php?post_type=emp_event&page=emp-dashboard' ),
+			'All Events' => admin_url( 'edit.php?post_type=emp_event' ),
+			'Add New Event' => admin_url( 'post-new.php?post_type=emp_event' ),
+			'Ticket Types' => admin_url( 'edit.php?post_type=emp_event&page=emp-ticket-types' ),
+			'Attendees' => admin_url( 'edit.php?post_type=emp_event&page=emp-attendees' ),
+			'Badge Designs' => admin_url( 'edit.php?post_type=emp_event&page=emp-badges' ),
+			'Walk-in Kiosk' => admin_url( 'edit.php?post_type=emp_event&page=emp-kiosk' ),
+			'Import Attendees' => admin_url( 'edit.php?post_type=emp_event&page=emp-import-attendees' ),
+			'Scan Points' => admin_url( 'edit.php?post_type=emp_event&page=emp-scan-points' ),
+			'Scan Badges (Frontend)' => site_url( '/scanner-access/' ),
+			'Communications (WhatsApp/Email)' => admin_url( 'edit.php?post_type=emp_event&page=emp-communications' ),
+			'Scan Statistics' => admin_url( 'edit.php?post_type=emp_event&page=emp-scan-stats' ),
+			'Audit Log' => admin_url( 'edit.php?post_type=emp_event&page=emp-audit-log' ),
+			'Settings' => admin_url( 'edit.php?post_type=emp_event&page=emp-settings' ),
+		);
+
+		$query_lower = strtolower( $query );
+		foreach ( $admin_pages as $page_title => $url ) {
+			if ( strpos( strtolower( $page_title ), $query_lower ) !== false ) {
+				$results[] = array(
+					'type'  => 'Page',
+					'title' => $page_title,
+					'url'   => $url
+				);
+			}
+		}
+
 		wp_send_json_success( array( 'results' => $results ) );
 	}
 
@@ -134,9 +179,11 @@ class EMP_Settings_Admin {
 							if (response.success && response.data.results.length > 0) {
 								var html = '<ul style="margin: 0; padding: 0; list-style: none;">';
 								$.each(response.data.results, function(index, item) {
-									var badgeColor = '#0073aa';
+									var badgeColor = '#0073aa'; // Default for Attendee
 									if (item.type === 'Event') badgeColor = '#28a745';
-									if (item.type === 'Ticket Type') badgeColor = '#dc3545';
+									else if (item.type === 'Ticket Type') badgeColor = '#dc3545';
+									else if (item.type === 'Scan Point') badgeColor = '#6f42c1';
+									else if (item.type === 'Page') badgeColor = '#17a2b8';
 									
 									html += '<li style="padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">';
 									html += '<div><strong>' + item.title + '</strong></div>';
