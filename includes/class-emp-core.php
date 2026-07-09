@@ -101,6 +101,10 @@ class EMP_Core {
 		require_once EMP_PLUGIN_DIR . 'services/class-emp-gf-integration.php';
 		$plugin_gf_integration = new EMP_GF_Integration();
 		$this->loader->add_action( 'gform_loaded', $plugin_gf_integration, 'init' );
+
+		require_once EMP_PLUGIN_DIR . 'services/class-emp-gf-cleanup.php';
+		$plugin_gf_cleanup = new EMP_GF_Cleanup();
+		$plugin_gf_cleanup->init();
 	}
 
 	private function define_public_hooks() {

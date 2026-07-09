@@ -22,6 +22,7 @@ class EMP_Event_Meta {
 		$badge_height = get_post_meta( $post->ID, '_emp_badge_height', true );
 		$capacity = get_post_meta( $post->ID, '_emp_capacity', true );
 		$gf_form_id = get_post_meta( $post->ID, '_emp_gf_form_id', true );
+		$require_payment = get_post_meta( $post->ID, '_emp_require_payment', true );
 		
 		// Fallbacks
 		if ( empty( $badge_width ) ) $badge_width = '100'; // mm
@@ -54,6 +55,13 @@ class EMP_Event_Meta {
 						<input type="number" id="emp_gf_form_id" name="emp_gf_form_id" value="<?php echo esc_attr( $gf_form_id ); ?>" class="regular-text" />
 					<?php endif; ?>
 					<p class="description"><?php _e( 'Select the Gravity Form used for registration.', 'event-management-plugin' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th><label for="emp_require_payment"><?php _e( 'Require Payment Confirmation?', 'event-management-plugin' ); ?></label></th>
+				<td>
+					<input type="checkbox" id="emp_require_payment" name="emp_require_payment" value="1" <?php checked( $require_payment, '1' ); ?> />
+					<span class="description"><?php _e( 'Delay attendee creation until Gravity Forms marks the payment as Paid or Approved.', 'event-management-plugin' ); ?></span>
 				</td>
 			</tr>
 			<tr>
@@ -92,5 +100,8 @@ class EMP_Event_Meta {
 		if ( isset( $_POST['emp_badge_height'] ) ) {
 			update_post_meta( $post_id, '_emp_badge_height', sanitize_text_field( $_POST['emp_badge_height'] ) );
 		}
+		
+		$require_payment = isset( $_POST['emp_require_payment'] ) ? '1' : '0';
+		update_post_meta( $post_id, '_emp_require_payment', $require_payment );
 	}
 }

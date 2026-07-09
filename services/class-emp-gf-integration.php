@@ -149,6 +149,15 @@ class EMP_GF_Integration {
 		if ( ! $event_id ) {
 			return $entry; // Not linked to any event directly
 		}
+		
+		$require_payment = get_post_meta( $event_id, '_emp_require_payment', true );
+		if ( $require_payment ) {
+			$payment_status = isset( $entry['payment_status'] ) ? strtolower( $entry['payment_status'] ) : '';
+			if ( ! in_array( $payment_status, array( 'paid', 'approved', 'active' ) ) ) {
+				// Skip creation now. It will be created by handle_payment_action when payment completes.
+				return $entry;
+			}
+		}
 
 		// Also get the first available ticket type for this event as default
 		$ticket_type_id = $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$wpdb->prefix}emp_ticket_types WHERE event_id = %d ORDER BY price ASC LIMIT 1", $event_id ) );
@@ -275,6 +284,12 @@ class EMP_GF_Integration {
 		}
 
 		if ( ! $attendee_id ) {
+			// If payment is complete and attendee doesn't exist, it might have been delayed!
+			if ( $action['type'] === 'complete_payment' ) {
+				$form = GFAPI::get_form( $entry['form_id'] );
+				$entry['payment_status'] = 'Paid';
+				$this->auto_create_attendee_for_linked_form( $entry, $form );
+			}
 			return;
 		}
 

@@ -30,9 +30,16 @@ class EMP_GF_Addon extends GFFeedAddOn {
 
 	public function init() {
 		parent::init();
-		// Move feed processing to entry creation so it runs BEFORE gform_confirmation
-		remove_action( 'gform_after_submission', array( $this, 'maybe_process_feed' ), 10, 2 );
+		// We hook into gform_entry_post_save so non-delayed feeds run BEFORE gform_confirmation (so badge download works).
 		add_action( 'gform_entry_post_save', array( $this, 'maybe_process_feed' ), 10, 2 );
+		
+		// We deliberately leave gform_after_submission hooked (inherited from parent::init()) 
+		// because GF processes delayed feeds (e.g. after successful payment) by triggering gform_after_submission.
+		// maybe_process_feed() internally prevents duplicate processing for non-delayed feeds.
+	}
+
+	public function supported_services() {
+		return array( 'delay' );
 	}
 
 	public function feed_settings_fields() {
