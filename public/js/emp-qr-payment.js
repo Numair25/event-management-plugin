@@ -85,6 +85,65 @@
                     return;
                 }
 
+                // ==========================================
+                // STRICT CLIENT-SIDE VALIDATION CHECK
+                // ==========================================
+                var hasValidationErrors = false;
+                
+                // 1. Native HTML5 Validation (if enabled by GF)
+                if (typeof form.checkValidity === 'function' && !form.checkValidity()) {
+                    hasValidationErrors = true;
+                }
+
+                // 2. Custom check for GF required fields (since GF doesn't always use HTML5 'required')
+                $form.find('.gfield_contains_required').each(function() {
+                    var $fieldContainer = $(this);
+                    if ($fieldContainer.is(':visible')) {
+                        // For inputs/textareas
+                        var $inputs = $fieldContainer.find('input:visible, select:visible, textarea:visible');
+                        $inputs.each(function() {
+                            var type = $(this).attr('type');
+                            if (type === 'checkbox' || type === 'radio') {
+                                var name = $(this).attr('name');
+                                if ($('input[name="' + name + '"]:checked').length === 0) {
+                                    hasValidationErrors = true;
+                                }
+                            } else {
+                                if ($(this).val() === '' || $(this).val() === null) {
+                                    hasValidationErrors = true;
+                                }
+                            }
+                        });
+                    }
+                });
+
+                // 3. Strict Email format check
+                $form.find('input[type="email"], .gfield_email input').each(function() {
+                    var val = $(this).val();
+                    // Regex requires something@something.something
+                    if (val && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+                        hasValidationErrors = true;
+                    }
+                });
+
+                // 4. Phone length check (at least 10 digits)
+                $form.find('input[type="tel"], .gfield_phone input').each(function() {
+                    var val = $(this).val();
+                    if (val) {
+                        var digitsOnly = val.replace(/\D/g, '');
+                        if (digitsOnly.length < 10) {
+                            hasValidationErrors = true;
+                        }
+                    }
+                });
+
+                // If any errors exist, let GF submit natively. 
+                // GF will reject it and show native error messages!
+                if (hasValidationErrors) {
+                    return; 
+                }
+                // ==========================================
+
                 // Check UX recovery (sessionStorage cache)
                 var savedTxId = sessionStorage.getItem('emp_qr_tx_id_' + formId);
                 var savedUrl = sessionStorage.getItem('emp_qr_screenshot_' + formId);

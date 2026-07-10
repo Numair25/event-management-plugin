@@ -89,14 +89,36 @@ class EMP_GF_Integration {
 		$email_field = null;
 		$email_value = '';
 		foreach ( $form['fields'] as &$field ) {
+			// Strict Email Validation
 			if ( $field->type === 'email' ) {
 				$email_field = $field;
 				$email_value = rgpost( 'input_' . str_replace( '.', '_', $field->id ) );
-				break;
+				
+				if ( ! empty( $email_value ) ) {
+					if ( ! is_email( $email_value ) || ! preg_match( '/^[^\s@]+@[^\s@]+\.[^\s@]+$/', $email_value ) ) {
+						$validation_result['is_valid'] = false;
+						$field->failed_validation = true;
+						$field->validation_message = __( 'Please enter a valid, real email address.', 'event-management-plugin' );
+					}
+				}
+			}
+
+			// Strict Phone Validation (At least 10 digits)
+			if ( $field->type === 'phone' || strpos( strtolower( $field->label ), 'phone' ) !== false || strpos( strtolower( $field->label ), 'mobile' ) !== false || strpos( strtolower( $field->label ), 'whatsapp' ) !== false ) {
+				$phone_val = rgpost( 'input_' . str_replace( '.', '_', $field->id ) );
+				if ( ! empty( $phone_val ) ) {
+					$digits_only = preg_replace( '/\D/', '', $phone_val );
+					if ( strlen( $digits_only ) < 10 ) {
+						$validation_result['is_valid'] = false;
+						$field->failed_validation = true;
+						$field->validation_message = __( 'Please enter a valid phone number with at least 10 digits.', 'event-management-plugin' );
+					}
+				}
 			}
 		}
 
-		if ( $email_field && ! empty( $email_value ) ) {
+		// Only check duplicate if email is structurally valid
+		if ( $email_field && ! empty( $email_value ) && ! $email_field->failed_validation ) {
 			// Check GF for existing entry with this email in this form
 			$search_criteria = array(
 				'status' => 'active',
@@ -129,20 +151,70 @@ class EMP_GF_Integration {
 			foreach ( $notes as $note ) {
 				if ( preg_match( '/Created Attendee ID: (\d+)/', $note->value, $matches ) ) {
 					$attendee_id = intval( $matches[1] );
-					global $wpdb;
-					// Delete scan logs
-					$wpdb->delete( $wpdb->prefix . 'emp_scan_logs', array( 'attendee_id' => $attendee_id ) );
-					// Delete payments
-					$wpdb->delete( $wpdb->prefix . 'emp_payments', array( 'attendee_id' => $attendee_id ) );
-					// Delete communications
-					$wpdb->delete( $wpdb->prefix . 'emp_communications', array( 'attendee_id' => $attendee_id ) );
-					// Delete audit logs referencing this attendee
-					$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}emp_audit_logs WHERE target = %s OR summary LIKE %s", 'Attendee', '%Attendee ID ' . $attendee_id . '%' ) );
-					// Delete attendee
-					$wpdb->delete( $wpdb->prefix . 'emp_attendees', array( 'id' => $attendee_id ) );
+					if ( $attendee_id ) {
+						global $wpdb;
+						
+						// Delete related records
+						$wpdb->delete( $wpdb->prefix . 'emp_scan_logs', array( 'attendee_id' => $attendee_id ) );
+						$wpdb->delete( $wpdb->prefix . 'emp_payments', array( 'attendee_id' => $attendee_id ) );
+						$wpdb->delete( $wpdb->prefix . 'emp_communications', array( 'attendee_id' => $attendee_id ) );
+						
+						// Optional: delete audit logs mentioning this attendee ID to fully clean up
+						// Since audit logs are string summaries, we use a LIKE query
+						$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}emp_audit_logs WHERE target = %s OR summary LIKE %s", 'Attendee', '%Attendee ID ' . $attendee_id . '%' ) );
+
+						// Delete the attendee record itself
+						$wpdb->delete( $wpdb->prefix . 'emp_attendees', array( 'id' => $attendee_id ) );
+					}
 				}
 			}
 		}
+	}
+
+	public function get_calling_code_from_ip( $ip ) {
+		// Standard WordPress HTTP request to ip-api
+		$response = wp_remote_get( 'http://ip-api.com/json/' . $ip . '?fields=countryCode' );
+		if ( is_wp_error( $response ) ) {
+			return '';
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+		$data = json_decode( $body, true );
+
+		if ( empty( $data['countryCode'] ) ) {
+			return '';
+		}
+
+		$iso = strtoupper( $data['countryCode'] );
+
+		// Comprehensive list of Country Calling Codes
+		$codes = array(
+			'AF'=>'+93','AL'=>'+355','DZ'=>'+213','AD'=>'+376','AO'=>'+244','AR'=>'+54','AM'=>'+374','AU'=>'+61',
+			'AT'=>'+43','AZ'=>'+994','BH'=>'+973','BD'=>'+880','BY'=>'+375','BE'=>'+32','BZ'=>'+501','BJ'=>'+229',
+			'BT'=>'+975','BO'=>'+591','BA'=>'+387','BW'=>'+267','BR'=>'+55','BN'=>'+673','BG'=>'+359','BF'=>'+226',
+			'BI'=>'+257','KH'=>'+855','CM'=>'+237','CA'=>'+1','CV'=>'+238','CF'=>'+236','TD'=>'+235','CL'=>'+56',
+			'CN'=>'+86','CO'=>'+57','KM'=>'+269','CG'=>'+242','CD'=>'+243','CR'=>'+506','HR'=>'+385','CU'=>'+53',
+			'CY'=>'+357','CZ'=>'+420','DK'=>'+45','DJ'=>'+253','DO'=>'+1809','EC'=>'+593','EG'=>'+20','SV'=>'+503',
+			'GQ'=>'+240','ER'=>'+291','EE'=>'+372','ET'=>'+251','FJ'=>'+679','FI'=>'+358','FR'=>'+33','GA'=>'+241',
+			'GM'=>'+220','GE'=>'+995','DE'=>'+49','GH'=>'+233','GR'=>'+30','GD'=>'+1473','GT'=>'+502','GN'=>'+224',
+			'GW'=>'+245','GY'=>'+592','HT'=>'+509','HN'=>'+504','HU'=>'+36','IS'=>'+354','IN'=>'+91','ID'=>'+62',
+			'IR'=>'+98','IQ'=>'+964','IE'=>'+353','IL'=>'+972','IT'=>'+39','JM'=>'+1876','JP'=>'+81','JO'=>'+962',
+			'KZ'=>'+7','KE'=>'+254','KI'=>'+686','KP'=>'+850','KR'=>'+82','KW'=>'+965','KG'=>'+996','LA'=>'+856',
+			'LV'=>'+371','LB'=>'+961','LS'=>'+266','LR'=>'+231','LY'=>'+218','LI'=>'+423','LT'=>'+370','LU'=>'+352',
+			'MK'=>'+389','MG'=>'+261','MW'=>'+265','MY'=>'+60','MV'=>'+960','ML'=>'+223','MT'=>'+356','MH'=>'+692',
+			'MR'=>'+222','MU'=>'+230','MX'=>'+52','FM'=>'+691','MD'=>'+373','MC'=>'+377','MN'=>'+976','ME'=>'+382',
+			'MA'=>'+212','MZ'=>'+258','MM'=>'+95','NA'=>'+264','NR'=>'+674','NP'=>'+977','NL'=>'+31','NZ'=>'+64',
+			'NI'=>'+505','NE'=>'+227','NG'=>'+234','NO'=>'+47','OM'=>'+968','PK'=>'+92','PW'=>'+680','PA'=>'+507',
+			'PG'=>'+675','PY'=>'+595','PE'=>'+51','PH'=>'+63','PL'=>'+48','PT'=>'+351','QA'=>'+974','RO'=>'+40',
+			'RU'=>'+7','RW'=>'+250','WS'=>'+685','SM'=>'+378','ST'=>'+239','SA'=>'+966','SN'=>'+221','RS'=>'+381',
+			'SC'=>'+248','SL'=>'+232','SG'=>'+65','SK'=>'+421','SI'=>'+386','SB'=>'+677','SO'=>'+252','ZA'=>'+27',
+			'SS'=>'+211','ES'=>'+34','LK'=>'+94','SD'=>'+249','SR'=>'+597','SZ'=>'+268','SE'=>'+46','CH'=>'+41',
+			'SY'=>'+963','TJ'=>'+992','TZ'=>'+255','TH'=>'+66','TG'=>'+228','TO'=>'+676','TT'=>'+1868','TN'=>'+216',
+			'TR'=>'+90','TM'=>'+993','TV'=>'+688','UG'=>'+256','UA'=>'+380','AE'=>'+971','GB'=>'+44','US'=>'+1',
+			'UY'=>'+598','UZ'=>'+998','VU'=>'+678','VE'=>'+58','VN'=>'+84','YE'=>'+967','ZM'=>'+260','ZW'=>'+263'
+		);
+
+		return isset( $codes[ $iso ] ) ? $codes[ $iso ] : '';
 	}
 
 	public function add_inr_currency( $currencies ) {
@@ -228,6 +300,18 @@ class EMP_GF_Integration {
 
 		if ( empty( $name ) ) $name = 'Attendee ' . $entry['id'];
 		if ( empty( $email ) ) $email = 'no-reply@example.com';
+
+		// Format Phone with IP-based Country Code
+		if ( ! empty( $phone ) && strpos( $phone, '+' ) !== 0 ) {
+			$ip = rgar( $entry, 'ip' );
+			if ( ! empty( $ip ) ) {
+				$prefix = $this->get_calling_code_from_ip( $ip );
+				if ( $prefix ) {
+					// strip non-digits first just in case
+					$phone = $prefix . ltrim( preg_replace( '/\D/', '', $phone ), '0' );
+				}
+			}
+		}
 
 		$qr_token = wp_generate_password( 32, false, false );
 

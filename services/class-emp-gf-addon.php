@@ -272,6 +272,20 @@ class EMP_GF_Addon extends GFFeedAddOn {
 			$organization = is_array( $org_val ) ? ( isset( $org_val[$index] ) ? $org_val[$index] : $org_val[0] ) : $org_val;
 			$photo_url = is_array( $photo_val ) ? ( isset( $photo_val[$index] ) ? $photo_val[$index] : $photo_val[0] ) : $photo_val;
 
+			// Format Phone with IP-based Country Code
+			if ( ! empty( $phone ) && strpos( $phone, '+' ) !== 0 ) {
+				$ip = rgar( $entry, 'ip' );
+				if ( ! empty( $ip ) && class_exists( 'EMP_GF_Integration' ) ) {
+					$integration = new EMP_GF_Integration();
+					if ( method_exists( $integration, 'get_calling_code_from_ip' ) ) {
+						$prefix = $integration->get_calling_code_from_ip( $ip );
+						if ( $prefix ) {
+							$phone = $prefix . ltrim( preg_replace( '/\D/', '', $phone ), '0' );
+						}
+					}
+				}
+			}
+
 			// Handle Photo Download & Validation
 			$photo_path = '';
 			if ( ! empty( $photo_url ) ) {
