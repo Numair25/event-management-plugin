@@ -54,53 +54,65 @@
     var activeForm = null;
     var activeFormId = null;
 
-    // Use capturing phase on document submit to intercept before GF's bubble-phase handlers
-    document.addEventListener('submit', function(e) {
-        var form = e.target;
-        
-        // Check if it is a Gravity Form
-        if (!form.id || !form.id.startsWith('gform_')) {
-            return;
-        }
+    function bindQrInterceptor() {
+        $('form').each(function() {
+            var form = this;
+            var $form = $(form);
+            
+            // Check if it is a Gravity Form
+            if (!form.id || !form.id.startsWith('gform_')) {
+                return;
+            }
 
-        var formId = form.id.replace('gform_', '');
-        
-        // Check if QR payment is enabled for this form
-        if (!empQrConfig.forms[formId]) {
-            return;
-        }
+            var formId = form.id.replace('gform_', '');
+            
+            // Check if QR payment is enabled for this form
+            if (!empQrConfig.forms[formId]) {
+                return;
+            }
 
-        // Check if form is already approved (we previously intercepted and uploaded screenshot)
-        if (form.getAttribute('data-qr-approved') === 'true') {
-            return;
-        }
+            // Unbind previous to avoid duplicates, then bind
+            $form.off('submit.empQr').on('submit.empQr', function(e) {
+                // Check if form is already approved (we previously intercepted and uploaded screenshot)
+                if (form.getAttribute('data-qr-approved') === 'true') {
+                    return; // let it submit naturally
+                }
 
-        // Ensure this is the final page submission (not next/previous on a multi-page form)
-        var targetPageField = document.getElementById('gform_target_page_number_' + formId);
-        var isFinalSubmit = !targetPageField || targetPageField.value === '0';
-        if (!isFinalSubmit) {
-            return;
-        }
+                // Ensure this is the final page submission
+                var targetPageField = document.getElementById('gform_target_page_number_' + formId);
+                var isFinalSubmit = !targetPageField || targetPageField.value === '0';
+                if (!isFinalSubmit) {
+                    return;
+                }
 
-        // Check UX recovery (sessionStorage cache)
-        var savedTxId = sessionStorage.getItem('emp_qr_tx_id_' + formId);
-        var savedUrl = sessionStorage.getItem('emp_qr_screenshot_' + formId);
-        if (savedTxId && savedUrl) {
-            appendFieldsAndSubmit(form, savedTxId, savedUrl);
-            return;
-        }
+                // Check UX recovery (sessionStorage cache)
+                var savedTxId = sessionStorage.getItem('emp_qr_tx_id_' + formId);
+                var savedUrl = sessionStorage.getItem('emp_qr_screenshot_' + formId);
+                if (savedTxId && savedUrl) {
+                    appendFieldsAndSubmit(form, savedTxId, savedUrl);
+                    return;
+                }
 
-        // Intercept: halt propagation and default submit
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
+                // Intercept: halt propagation and default submit
+                e.preventDefault();
+                e.stopImmediatePropagation();
 
-        activeForm = form;
-        activeFormId = formId;
+                // Reset GF's internal submitting flag so they can submit again if they cancel
+                if (typeof window['gf_submitting_' + formId] !== 'undefined') {
+                    window['gf_submitting_' + formId] = false;
+                }
 
-        // Open verification modal
-        openModal(formId);
-    }, true); // useCapture = true
+                activeForm = form;
+                activeFormId = formId;
+
+                // Open verification modal
+                openModal(formId);
+            });
+        });
+    }
+
+    $(document).ready(bindQrInterceptor);
+    $(document).on('gform_post_render', bindQrInterceptor);
 
     function openModal(formId) {
         var settings = empQrConfig.forms[formId];
@@ -148,8 +160,14 @@
         // Mark form as approved
         form.setAttribute('data-qr-approved', 'true');
 
-        // Submit form via jQuery
-        $form.trigger('submit');
+        // Submit form via Gravity Forms standard trigger to resume its process
+        if (typeof gf_do_action !== 'undefined') {
+            // Trigger GF's internal submission process
+            $form.trigger('submit');
+        } else {
+            // Fallback native submit
+            HTMLFormElement.prototype.submit.call(form);
+        }
     }
 
     // Client-side file type and size validation
