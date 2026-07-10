@@ -36,6 +36,15 @@ class EMP_QR_Frontend {
 				EMP_VERSION,
 				true
 			);
+			
+			// Enqueue QRCode generator
+			wp_enqueue_script(
+				'emp-qrcode-js',
+				EMP_PLUGIN_URL . 'public/js/qrcode.min.js',
+				array(),
+				'1.0.0',
+				true
+			);
 
 			// Prepare settings for all enabled forms to keep it robust and merge-safe
 			$enabled_forms = array();
@@ -45,6 +54,7 @@ class EMP_QR_Frontend {
 						'form_id'      => $id,
 						'amount'       => floatval( $data['amount'] ),
 						'qr_image_url' => esc_url_raw( $data['qr_image_url'] ),
+						'upi_id'       => isset( $data['upi_id'] ) ? sanitize_text_field( $data['upi_id'] ) : '',
 					);
 				}
 			}

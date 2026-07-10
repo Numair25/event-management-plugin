@@ -119,7 +119,29 @@
         var modal = $('#emp-qr-modal');
 
         modal.find('.emp-qr-amount').text(settings.amount.toFixed(2));
-        modal.find('.emp-qr-image').attr('src', settings.qr_image_url);
+        
+        var $qrContainer = modal.find('.emp-qr-image-container');
+        $qrContainer.empty(); // Clear previous content
+
+        if (settings.upi_id && typeof QRCode !== 'undefined') {
+            // Generate dynamic UPI intent QR code
+            // format: upi://pay?pa=UPI_ID&pn=Merchant&am=AMOUNT&cu=INR
+            var upiIntent = 'upi://pay?pa=' + encodeURIComponent(settings.upi_id) + '&pn=Event&am=' + encodeURIComponent(settings.amount.toFixed(2)) + '&cu=INR';
+            
+            var $qrDiv = $('<div class="emp-qr-dynamic-code"></div>').appendTo($qrContainer);
+            new QRCode($qrDiv[0], {
+                text: upiIntent,
+                width: 200,
+                height: 200,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+            $qrDiv.find('img').addClass('emp-qr-image'); // Keep styling
+        } else {
+            // Fallback to static uploaded image
+            $('<img class="emp-qr-image" alt="QR Code Payment" />').attr('src', settings.qr_image_url).appendTo($qrContainer);
+        }
         
         // Reset modal fields
         modal.find('#emp-qr-transaction-id').val('');

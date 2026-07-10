@@ -28,6 +28,9 @@ class EMP_QR_Settings_Admin {
 
 		// Enqueue WP Media Library scripts
 		wp_enqueue_media();
+		
+		// Enqueue jsQR library for decoding uploaded images
+		wp_enqueue_script( 'jsqr', EMP_PLUGIN_URL . 'admin/js/jsQR.js', array(), EMP_VERSION, true );
 
 		// Handle saving option
 		if ( isset( $_POST['emp_save_qr_settings'] ) && check_admin_referer( 'emp_save_qr_settings_action', 'emp_save_qr_settings_nonce' ) ) {
@@ -44,11 +47,13 @@ class EMP_QR_Settings_Admin {
 					$enabled = isset( $form_data['enabled'] ) ? true : false;
 					$amount = isset( $form_data['amount'] ) ? max( 0.00, round( floatval( $form_data['amount'] ), 2 ) ) : 0.00;
 					$qr_image_url = isset( $form_data['qr_image_url'] ) ? esc_url_raw( $form_data['qr_image_url'] ) : '';
+					$upi_id = isset( $form_data['upi_id'] ) ? sanitize_text_field( $form_data['upi_id'] ) : '';
 
 					$settings[ $form_id ] = array(
 						'enabled'      => $enabled,
 						'amount'       => $amount,
 						'qr_image_url' => $qr_image_url,
+						'upi_id'       => $upi_id,
 					);
 				}
 			}
@@ -84,6 +89,7 @@ class EMP_QR_Settings_Admin {
 								<th style="width: 80px;"><?php _e( 'Form ID', 'event-management-plugin' ); ?></th>
 								<th><?php _e( 'Form Title', 'event-management-plugin' ); ?></th>
 								<th><?php _e( 'Amount (₹)', 'event-management-plugin' ); ?></th>
+								<th><?php _e( 'UPI ID (Optional)', 'event-management-plugin' ); ?></th>
 								<th><?php _e( 'QR Image URL / Uploader', 'event-management-plugin' ); ?></th>
 							</tr>
 						</thead>
@@ -110,8 +116,11 @@ class EMP_QR_Settings_Admin {
 											<input type="number" name="qr_settings[<?php echo esc_attr( $form_id ); ?>][amount]" value="<?php echo esc_attr( $amount ); ?>" step="0.01" min="0" class="small-text" style="width: 100px;" />
 										</td>
 										<td>
-											<input type="text" id="qr_image_url_<?php echo esc_attr( $form_id ); ?>" name="qr_settings[<?php echo esc_attr( $form_id ); ?>][qr_image_url]" value="<?php echo esc_url( $qr_image_url ); ?>" class="regular-text" style="max-width: 300px;" />
-											<button type="button" class="button emp-upload-qr-btn" data-target="#qr_image_url_<?php echo esc_attr( $form_id ); ?>"><?php _e( 'Upload / Select Image', 'event-management-plugin' ); ?></button>
+											<input type="text" id="upi_id_<?php echo esc_attr( $form_id ); ?>" name="qr_settings[<?php echo esc_attr( $form_id ); ?>][upi_id]" value="<?php echo esc_attr( isset( $form_settings['upi_id'] ) ? $form_settings['upi_id'] : '' ); ?>" class="regular-text" style="width: 100%;" placeholder="e.g. name@upi" />
+										</td>
+										<td>
+											<input type="text" id="qr_image_url_<?php echo esc_attr( $form_id ); ?>" name="qr_settings[<?php echo esc_attr( $form_id ); ?>][qr_image_url]" value="<?php echo esc_url( $qr_image_url ); ?>" class="regular-text" style="width: 250px;" />
+											<button type="button" class="button emp-upload-qr-btn" data-target="#qr_image_url_<?php echo esc_attr( $form_id ); ?>" data-form-id="<?php echo esc_attr( $form_id ); ?>"><?php _e( 'Upload Image', 'event-management-plugin' ); ?></button>
 										</td>
 									</tr>
 								<?php endforeach; ?>
@@ -126,10 +135,12 @@ class EMP_QR_Settings_Admin {
 				jQuery(document).ready(function($){
 					var mediaUploader;
 					var activeInputTarget = null;
+					var activeFormId = null;
 					
 					$('.emp-upload-qr-btn').on('click', function(e) {
 						e.preventDefault();
 						activeInputTarget = $(this).data('target');
+						activeFormId = $(this).data('form-id');
 						
 						if (mediaUploader) {
 							mediaUploader.open();
@@ -148,6 +159,35 @@ class EMP_QR_Settings_Admin {
 							var attachment = mediaUploader.state().get('selection').first().toJSON();
 							if (activeInputTarget && attachment.url) {
 								$(activeInputTarget).val(attachment.url);
+
+								// If UPI ID is empty, try to decode the QR
+								var $upiInput = $('#upi_id_' + activeFormId);
+								if ($upiInput.val().trim() === '') {
+									var img = new Image();
+									img.crossOrigin = "Anonymous";
+									img.onload = function() {
+										var canvas = document.createElement('canvas');
+										var context = canvas.getContext('2d');
+										canvas.width = img.width;
+										canvas.height = img.height;
+										context.drawImage(img, 0, 0, img.width, img.height);
+										var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+										
+										if (typeof jsQR !== 'undefined') {
+											var code = jsQR(imageData.data, imageData.width, imageData.height);
+											if (code && code.data) {
+												// Extract UPI ID from URL: upi://pay?pa=some@upi&...
+												if (code.data.indexOf('upi://pay') !== -1) {
+													var urlParams = new URLSearchParams(code.data.split('?')[1]);
+													if (urlParams.has('pa')) {
+														$upiInput.val(urlParams.get('pa'));
+													}
+												}
+											}
+										}
+									};
+									img.src = attachment.url;
+								}
 							}
 						});
 						
