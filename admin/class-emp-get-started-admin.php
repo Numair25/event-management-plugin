@@ -105,6 +105,16 @@ class EMP_Get_Started_Admin {
 			<div class="emp-step-card">
 				<div class="emp-step-number">5</div>
 				<div class="emp-step-content">
+					<h3>Setup QR Payments (Optional)</h3>
+					<p>If you want to accept payments via UPI QR codes on your Gravity Form, go to the <strong>QR Settings</strong> tab. Here you can upload your merchant QR code (the system will automatically extract your UPI ID) and set a payment amount. Once enabled, attendees will see a dynamic QR code generating with the exact amount when they submit the form. You can then review their uploaded screenshots in the <strong>QR Approvals</strong> tab.</p>
+					<a href="<?php echo admin_url('edit.php?post_type=emp_event&page=emp-qr-settings'); ?>" class="button button-secondary">Configure QR Settings</a>
+					<a href="<?php echo admin_url('edit.php?post_type=emp_event&page=emp-qr-approvals'); ?>" class="button button-secondary">View Pending Approvals</a>
+				</div>
+			</div>
+
+			<div class="emp-step-card">
+				<div class="emp-step-number">6</div>
+				<div class="emp-step-content">
 					<h3>Design the Physical Badge</h3>
 					<p>Use the Badge Designs drag-and-drop builder to layout where text fields and the QR code will print on the badge. You can create a different badge design for each Ticket Type (e.g., a gold badge for VIPs, white for General).</p>
 					<a href="<?php echo admin_url('edit.php?post_type=emp_event&page=emp-badges'); ?>" class="button button-secondary">Design Badges</a>
@@ -112,7 +122,7 @@ class EMP_Get_Started_Admin {
 			</div>
 
 			<div class="emp-step-card">
-				<div class="emp-step-number">6</div>
+				<div class="emp-step-number">7</div>
 				<div class="emp-step-content">
 					<h3>Configure Scan Points</h3>
 					<p>Set up physical locations where staff will scan QR codes (e.g., Main Entrance, Lunch Hall). You can restrict these scan points so only certain Ticket Types are allowed to enter.</p>
@@ -121,7 +131,7 @@ class EMP_Get_Started_Admin {
 			</div>
 
 			<div class="emp-step-card">
-				<div class="emp-step-number">7</div>
+				<div class="emp-step-number">8</div>
 				<div class="emp-step-content">
 					<h3>Run Your Event On-Site</h3>
 					<p>When the event begins, use the Walk-In Kiosk to quickly register attendees paying at the door and print their badges instantly. Provide your door staff with the URL to the Frontend QR Scanner so they can scan attendees in! The scanner features an instant popup interface, allowing staff to scan continuously without touching the screen.</p>
@@ -131,7 +141,7 @@ class EMP_Get_Started_Admin {
 			</div>
 
 			<div class="emp-step-card">
-				<div class="emp-step-number">8</div>
+				<div class="emp-step-number">9</div>
 				<div class="emp-step-content">
 					<h3>Track Data & Analytics</h3>
 					<p>Monitor your event's success in real-time. Use the <strong>Dashboard & Reports</strong> tab for high-level revenue metrics, and use the <strong>Scan Statistics</strong> tab to see exactly how many people have passed through each of your Scan Points (e.g., Food, Main Entrance) on any given date.</p>
@@ -141,7 +151,7 @@ class EMP_Get_Started_Admin {
 			</div>
 
 			<div class="emp-step-card">
-				<div class="emp-step-number">9</div>
+				<div class="emp-step-number">10</div>
 				<div class="emp-step-content">
 					<h3>Manage Your Team (User Roles)</h3>
 					<p>The plugin includes 3 custom user roles to securely delegate tasks to your staff:</p>

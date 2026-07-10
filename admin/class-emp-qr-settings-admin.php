@@ -81,8 +81,23 @@ class EMP_QR_Settings_Admin {
 				<form method="post" action="">
 					<?php wp_nonce_field( 'emp_save_qr_settings_action', 'emp_save_qr_settings_nonce' ); ?>
 					<input type="hidden" name="emp_save_qr_settings" value="1" />
+
+					<div style="margin-top: 20px; margin-bottom: 15px; display: flex; gap: 15px; align-items: center;">
+						<div>
+							<label for="emp_qr_settings_search"><strong><?php _e( 'Search:', 'event-management-plugin' ); ?></strong></label>
+							<input type="text" id="emp_qr_settings_search" placeholder="<?php esc_attr_e( 'Search Form Title or ID...', 'event-management-plugin' ); ?>" style="padding: 3px 8px; width: 250px;" />
+						</div>
+						<div>
+							<label for="emp_qr_settings_status_filter"><strong><?php _e( 'Filter by Status:', 'event-management-plugin' ); ?></strong></label>
+							<select id="emp_qr_settings_status_filter">
+								<option value=""><?php _e( 'All Forms', 'event-management-plugin' ); ?></option>
+								<option value="enabled"><?php _e( 'Enabled Only', 'event-management-plugin' ); ?></option>
+								<option value="disabled"><?php _e( 'Disabled Only', 'event-management-plugin' ); ?></option>
+							</select>
+						</div>
+					</div>
 					
-					<table class="wp-list-table widefat fixed striped" style="margin-top: 20px;">
+					<table class="wp-list-table widefat fixed striped" id="emp_qr_settings_table">
 						<thead>
 							<tr>
 								<th style="width: 80px; text-align: center;"><?php _e( 'Enabled', 'event-management-plugin' ); ?></th>
@@ -100,15 +115,17 @@ class EMP_QR_Settings_Admin {
 								</tr>
 							<?php else : ?>
 								<?php foreach ( $forms as $form ) : 
-									$form_id = intval( $form['id'] );
-									$form_settings = isset( $saved_settings[ $form_id ] ) ? $saved_settings[ $form_id ] : array();
-									$enabled = isset( $form_settings['enabled'] ) ? (bool) $form_settings['enabled'] : false;
-									$amount = isset( $form_settings['amount'] ) ? floatval( $form_settings['amount'] ) : 0.00;
-									$qr_image_url = isset( $form_settings['qr_image_url'] ) ? $form_settings['qr_image_url'] : '';
+									$form_id = $form['id'];
+									$is_enabled = isset( $saved_settings[ $form_id ]['enabled'] ) ? $saved_settings[ $form_id ]['enabled'] : false;
+									$amount = isset( $saved_settings[ $form_id ]['amount'] ) ? $saved_settings[ $form_id ]['amount'] : '';
+									$qr_url = isset( $saved_settings[ $form_id ]['qr_image_url'] ) ? $saved_settings[ $form_id ]['qr_image_url'] : '';
+									$upi_id = isset( $saved_settings[ $form_id ]['upi_id'] ) ? $saved_settings[ $form_id ]['upi_id'] : '';
+									
+									$status_class = $is_enabled ? 'status-enabled' : 'status-disabled';
 								?>
-									<tr>
+									<tr class="emp-qr-settings-row <?php echo esc_attr( $status_class ); ?>">
 										<td style="text-align: center;">
-											<input type="checkbox" name="qr_settings[<?php echo esc_attr( $form_id ); ?>][enabled]" value="1" <?php checked( $enabled, true ); ?> />
+											<input type="checkbox" class="emp-qr-enabled-cb" name="qr_settings[<?php echo esc_attr( $form_id ); ?>][enabled]" value="1" <?php checked( $is_enabled, true ); ?> />
 										</td>
 										<td><code><?php echo esc_html( $form_id ); ?></code></td>
 										<td><strong><?php echo esc_html( $form['title'] ); ?></strong></td>
@@ -116,11 +133,11 @@ class EMP_QR_Settings_Admin {
 											<input type="number" name="qr_settings[<?php echo esc_attr( $form_id ); ?>][amount]" value="<?php echo esc_attr( $amount ); ?>" step="0.01" min="0" class="small-text" style="width: 100px;" />
 										</td>
 										<td>
-											<input type="text" id="upi_id_<?php echo esc_attr( $form_id ); ?>" name="qr_settings[<?php echo esc_attr( $form_id ); ?>][upi_id]" value="<?php echo esc_attr( isset( $form_settings['upi_id'] ) ? $form_settings['upi_id'] : '' ); ?>" class="regular-text" style="width: 100%;" placeholder="e.g. name@upi" />
+											<input type="text" id="upi_id_<?php echo esc_attr( $form_id ); ?>" name="qr_settings[<?php echo esc_attr( $form_id ); ?>][upi_id]" value="<?php echo esc_attr( $upi_id ); ?>" class="regular-text emp-qr-upi-input" style="width: 100%;" placeholder="e.g. name@upi" />
 										</td>
 										<td>
-											<input type="text" id="qr_image_url_<?php echo esc_attr( $form_id ); ?>" name="qr_settings[<?php echo esc_attr( $form_id ); ?>][qr_image_url]" value="<?php echo esc_url( $qr_image_url ); ?>" class="regular-text" style="width: 250px;" />
-											<button type="button" class="button emp-upload-qr-btn" data-target="#qr_image_url_<?php echo esc_attr( $form_id ); ?>" data-form-id="<?php echo esc_attr( $form_id ); ?>"><?php _e( 'Upload Image', 'event-management-plugin' ); ?></button>
+											<input type="text" id="qr_image_url_<?php echo esc_attr( $form_id ); ?>" name="qr_settings[<?php echo esc_attr( $form_id ); ?>][qr_image_url]" value="<?php echo esc_url( $qr_url ); ?>" class="regular-text emp-qr-url-input" style="width: 250px;" />
+											<button type="button" class="button emp-qr-upload-button" data-target="#qr_image_url_<?php echo esc_attr( $form_id ); ?>" data-form-id="<?php echo esc_attr( $form_id ); ?>"><?php _e( 'Upload', 'event-management-plugin' ); ?></button>
 										</td>
 									</tr>
 								<?php endforeach; ?>
@@ -131,69 +148,89 @@ class EMP_QR_Settings_Admin {
 					<?php submit_button( __( 'Save QR Settings', 'event-management-plugin' ) ); ?>
 				</form>
 				
-				<script>
-				jQuery(document).ready(function($){
-					var mediaUploader;
-					var activeInputTarget = null;
-					var activeFormId = null;
-					
-					$('.emp-upload-qr-btn').on('click', function(e) {
-						e.preventDefault();
-						activeInputTarget = $(this).data('target');
-						activeFormId = $(this).data('form-id');
-						
-						if (mediaUploader) {
-							mediaUploader.open();
-							return;
-						}
-						
-						mediaUploader = wp.media({
-							title: '<?php esc_attr_e( 'Select or Upload QR Code Image', 'event-management-plugin' ); ?>',
-							button: {
-								text: '<?php esc_attr_e( 'Use this image', 'event-management-plugin' ); ?>'
-							},
-							multiple: false
-						});
-						
-						mediaUploader.on('select', function() {
-							var attachment = mediaUploader.state().get('selection').first().toJSON();
-							if (activeInputTarget && attachment.url) {
-								$(activeInputTarget).val(attachment.url);
+				<script type="text/javascript">
+					jQuery(document).ready(function($) {
+						// Real-time table filter logic
+						function filterSettingsTable() {
+							var searchTerm = $('#emp_qr_settings_search').val().toLowerCase();
+							var statusFilter = $('#emp_qr_settings_status_filter').val();
 
-								// If UPI ID is empty, try to decode the QR
-								var $upiInput = $('#upi_id_' + activeFormId);
-								if ($upiInput.val().trim() === '') {
-									var img = new Image();
-									img.crossOrigin = "Anonymous";
-									img.onload = function() {
-										var canvas = document.createElement('canvas');
-										var context = canvas.getContext('2d');
-										canvas.width = img.width;
-										canvas.height = img.height;
-										context.drawImage(img, 0, 0, img.width, img.height);
-										var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-										
-										if (typeof jsQR !== 'undefined') {
-											var code = jsQR(imageData.data, imageData.width, imageData.height);
-											if (code && code.data) {
-												// Extract UPI ID from URL: upi://pay?pa=some@upi&...
-												if (code.data.indexOf('upi://pay') !== -1) {
-													var urlParams = new URLSearchParams(code.data.split('?')[1]);
-													if (urlParams.has('pa')) {
-														$upiInput.val(urlParams.get('pa'));
-													}
-												}
-											}
-										}
-									};
-									img.src = attachment.url;
+							$('#emp_qr_settings_table tbody tr.emp-qr-settings-row').each(function() {
+								var row = $(this);
+								// Only search in Form ID and Form Title columns (index 1 and 2)
+								var idText = row.find('td:eq(1)').text().toLowerCase();
+								var titleText = row.find('td:eq(2)').text().toLowerCase();
+								var rowText = idText + " " + titleText;
+								
+								var textMatches = rowText.indexOf(searchTerm) > -1;
+								
+								// Determine dynamic status based on checkbox state
+								var isEnabled = row.find('.emp-qr-enabled-cb').is(':checked');
+								var statusMatches = true;
+								if (statusFilter === 'enabled' && !isEnabled) statusMatches = false;
+								if (statusFilter === 'disabled' && isEnabled) statusMatches = false;
+
+								if (textMatches && statusMatches) {
+									row.show();
+								} else {
+									row.hide();
 								}
-							}
+							});
+						}
+
+						$('#emp_qr_settings_search').on('keyup', filterSettingsTable);
+						$('#emp_qr_settings_status_filter').on('change', filterSettingsTable);
+						$('.emp-qr-enabled-cb').on('change', filterSettingsTable); 
+
+						// Uploader Logic
+						$('.emp-qr-upload-button').click(function(e) {
+							e.preventDefault();
+							var button = $(this);
+							var inputField = $(button.data('target'));
+							var formId = button.data('form-id');
+							var upiField = $('#upi_id_' + formId);
+							
+							var customUploader = wp.media({
+								title: 'Select QR Code Image',
+								button: { text: 'Use Image' },
+								multiple: false
+							}).on('select', function() {
+								var attachment = customUploader.state().get('selection').first().toJSON();
+								inputField.val(attachment.url);
+
+								// Only try to extract if UPI field is empty
+								if (upiField.val() === '') {
+									extractUpiFromImage(attachment.url, upiField);
+								}
+
+							}).open();
 						});
-						
-						mediaUploader.open();
+
+						function extractUpiFromImage(imageUrl, upiField) {
+							if (typeof jsQR !== 'function') return;
+
+							var img = new Image();
+							img.crossOrigin = "Anonymous";
+							img.onload = function() {
+								var canvas = document.createElement('canvas');
+								var context = canvas.getContext('2d');
+								canvas.width = img.width;
+								canvas.height = img.height;
+								context.drawImage(img, 0, 0, img.width, img.height);
+								
+								var imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+								var code = jsQR(imageData.data, imageData.width, imageData.height);
+								
+								if (code && code.data.indexOf('upi://pay') !== -1) {
+									var urlParams = new URLSearchParams(code.data.substring(code.data.indexOf('?')));
+									if (urlParams.has('pa')) {
+										upiField.val(urlParams.get('pa'));
+									}
+								}
+							};
+							img.src = imageUrl;
+						}
 					});
-				});
 				</script>
 			<?php endif; ?>
 		</div>

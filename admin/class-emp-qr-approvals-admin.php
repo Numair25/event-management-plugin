@@ -54,7 +54,26 @@ class EMP_QR_Approvals_Admin {
 			<h1><?php _e( 'Pending QR Payment Approvals', 'event-management-plugin' ); ?></h1>
 			<p class="description"><?php _e( 'Review and manually approve pending QR transactions.', 'event-management-plugin' ); ?></p>
 			
-			<table class="wp-list-table widefat fixed striped" style="margin-top: 20px;">
+			<div style="margin-top: 20px; margin-bottom: 15px; display: flex; gap: 15px; align-items: center;">
+				<div>
+					<label for="emp_qr_approvals_search"><strong><?php _e( 'Search:', 'event-management-plugin' ); ?></strong></label>
+					<input type="text" id="emp_qr_approvals_search" placeholder="<?php esc_attr_e( 'Search ID, Form, Tx...', 'event-management-plugin' ); ?>" style="padding: 3px 8px; width: 250px;" />
+				</div>
+				<div>
+					<label for="emp_qr_approvals_form_filter"><strong><?php _e( 'Filter by Form:', 'event-management-plugin' ); ?></strong></label>
+					<select id="emp_qr_approvals_form_filter">
+						<option value=""><?php _e( 'All Forms', 'event-management-plugin' ); ?></option>
+						<?php
+						$forms = GFAPI::get_forms();
+						foreach ( $forms as $form ) {
+							echo '<option value="' . esc_attr( $form['id'] ) . '">' . esc_html( $form['title'] ) . '</option>';
+						}
+						?>
+					</select>
+				</div>
+			</div>
+
+			<table class="wp-list-table widefat fixed striped" id="emp_qr_approvals_table">
 				<thead>
 					<tr>
 						<th style="width: 80px;"><?php _e( 'Entry ID', 'event-management-plugin' ); ?></th>
@@ -76,7 +95,7 @@ class EMP_QR_Approvals_Admin {
 							$tx_id = gform_get_meta( $entry['id'], 'emp_qr_transaction_id' );
 							$screenshot = gform_get_meta( $entry['id'], 'emp_qr_screenshot_url' );
 						?>
-							<tr>
+							<tr class="emp-qr-approval-row" data-form-id="<?php echo esc_attr( $entry['form_id'] ); ?>">
 								<td><code><?php echo esc_html( $entry['id'] ); ?></code></td>
 								<td><strong><?php echo esc_html( isset( $form['title'] ) ? $form['title'] : 'Form ' . $entry['form_id'] ); ?></strong></td>
 								<td>₹<?php echo esc_html( isset( $entry['payment_amount'] ) ? $entry['payment_amount'] : '0.00' ); ?></td>
@@ -98,6 +117,33 @@ class EMP_QR_Approvals_Admin {
 				</tbody>
 			</table>
 		</div>
+
+		<script type="text/javascript">
+			jQuery(document).ready(function($) {
+				function filterTable() {
+					var searchTerm = $('#emp_qr_approvals_search').val().toLowerCase();
+					var formFilter = $('#emp_qr_approvals_form_filter').val();
+
+					$('#emp_qr_approvals_table tbody tr.emp-qr-approval-row').each(function() {
+						var row = $(this);
+						var rowText = row.text().toLowerCase();
+						var rowFormId = row.data('form-id');
+
+						var textMatches = rowText.indexOf(searchTerm) > -1;
+						var formMatches = (formFilter === '' || rowFormId == formFilter);
+
+						if (textMatches && formMatches) {
+							row.show();
+						} else {
+							row.hide();
+						}
+					});
+				}
+
+				$('#emp_qr_approvals_search').on('keyup', filterTable);
+				$('#emp_qr_approvals_form_filter').on('change', filterTable);
+			});
+		</script>
 		<?php
 	}
 

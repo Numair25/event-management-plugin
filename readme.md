@@ -43,7 +43,13 @@ A comprehensive WordPress plugin for managing physical events, handling walk-in 
    - Dedicated **Scan Statistics** menu: advanced filtering by Event, Date, and specific Scan Point to view precise scan volumes.
    - Dedicated **Live Scan Audit Log** tab with advanced filtering by Event, Station, Scan Result (Pass/Fail), and Attendee Search.
 
-7. **Custom User Roles**
+7. **Dynamic UPI QR Payments & Manual Approvals**
+   - Accept payments seamlessly through dynamic UPI QR codes directly on the Gravity Forms registration page.
+   - Admin panel for uploading merchant QR codes, with automatic UPI ID extraction using embedded `jsQR` decoding.
+   - Real-time client-side generation of UPI QR codes populated with exact payment amounts using `qrcode.js`.
+   - Complete backend review system ("Pending QR Approvals") for admins to verify payment screenshots and transaction IDs before generating badges.
+
+8. **Custom User Roles**
    - Includes custom roles to securely delegate operations: `Event Organizer`, `Registration Staff` (Kiosk-only), and `Scanning Staff` (Scanner-only).
 
 ## Getting Started Workflow
