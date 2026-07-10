@@ -124,17 +124,23 @@ class EMP_GF_Integration {
 
 	public function sync_delete_entry( $entry_id ) {
 		if ( ! class_exists( 'GFAPI' ) ) return;
-		$notes = GFAPI::get_notes( $entry_id );
-		foreach ( $notes as $note ) {
-			if ( preg_match( '/Created Attendee ID: (\d+)/', $note->value, $matches ) ) {
-				$attendee_id = intval( $matches[1] );
-				global $wpdb;
-				// Delete scan logs
-				$wpdb->delete( $wpdb->prefix . 'emp_scan_logs', array( 'attendee_id' => $attendee_id ) );
-				// Delete payments
-				$wpdb->delete( $wpdb->prefix . 'emp_payments', array( 'attendee_id' => $attendee_id ) );
-				// Delete attendee
-				$wpdb->delete( $wpdb->prefix . 'emp_attendees', array( 'id' => $attendee_id ) );
+		$notes = GFAPI::get_notes( array( 'entry_id' => $entry_id ) );
+		if ( is_array( $notes ) && ! is_wp_error( $notes ) ) {
+			foreach ( $notes as $note ) {
+				if ( preg_match( '/Created Attendee ID: (\d+)/', $note->value, $matches ) ) {
+					$attendee_id = intval( $matches[1] );
+					global $wpdb;
+					// Delete scan logs
+					$wpdb->delete( $wpdb->prefix . 'emp_scan_logs', array( 'attendee_id' => $attendee_id ) );
+					// Delete payments
+					$wpdb->delete( $wpdb->prefix . 'emp_payments', array( 'attendee_id' => $attendee_id ) );
+					// Delete communications
+					$wpdb->delete( $wpdb->prefix . 'emp_communications', array( 'attendee_id' => $attendee_id ) );
+					// Delete audit logs referencing this attendee
+					$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}emp_audit_logs WHERE target = %s OR summary LIKE %s", 'Attendee', '%Attendee ID ' . $attendee_id . '%' ) );
+					// Delete attendee
+					$wpdb->delete( $wpdb->prefix . 'emp_attendees', array( 'id' => $attendee_id ) );
+				}
 			}
 		}
 	}
@@ -376,4 +382,5 @@ class EMP_GF_Integration {
 				break;
 		}
 	}
+
 }
