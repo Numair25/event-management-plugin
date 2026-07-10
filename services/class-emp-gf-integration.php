@@ -204,6 +204,7 @@ class EMP_GF_Integration {
 		$name = '';
 		$email = '';
 		$org = '';
+		$phone = '';
 
 		foreach ( $form['fields'] as $field ) {
 			if ( $field->type === 'name' ) {
@@ -212,6 +213,8 @@ class EMP_GF_Integration {
 				$name = trim( $first . ' ' . $last );
 			} elseif ( $field->type === 'email' ) {
 				$email = isset( $entry[ $field->id ] ) ? $entry[ $field->id ] : '';
+			} elseif ( $field->type === 'phone' || strpos( strtolower( $field->label ), 'phone' ) !== false || strpos( strtolower( $field->label ), 'mobile' ) !== false || strpos( strtolower( $field->label ), 'whatsapp' ) !== false ) {
+				$phone = isset( $entry[ $field->id ] ) ? $entry[ $field->id ] : '';
 			} elseif ( strpos( strtolower( $field->label ), 'organization' ) !== false || strpos( strtolower( $field->label ), 'company' ) !== false ) {
 				$org = isset( $entry[ $field->id ] ) ? $entry[ $field->id ] : '';
 			}
@@ -227,6 +230,7 @@ class EMP_GF_Integration {
 			'ticket_type_id' => $ticket_type_id,
 			'name'           => $name,
 			'email'          => $email,
+			'phone'          => $phone,
 			'organization'   => $org,
 			'photo_path'     => '',
 			'qr_token'       => $qr_token,

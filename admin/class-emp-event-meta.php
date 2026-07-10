@@ -23,6 +23,8 @@ class EMP_Event_Meta {
 		$capacity = get_post_meta( $post->ID, '_emp_capacity', true );
 		$gf_form_id = get_post_meta( $post->ID, '_emp_gf_form_id', true );
 		$require_payment = get_post_meta( $post->ID, '_emp_require_payment', true );
+		$badge_download_limit = get_post_meta( $post->ID, '_emp_badge_download_limit', true );
+		if ( empty( $badge_download_limit ) ) $badge_download_limit = 'multiple';
 		
 		// Fallbacks
 		if ( empty( $badge_width ) ) $badge_width = '100'; // mm
@@ -65,6 +67,16 @@ class EMP_Event_Meta {
 				</td>
 			</tr>
 			<tr>
+				<th><label for="emp_badge_download_limit"><?php _e( 'Badge Download Limit', 'event-management-plugin' ); ?></label></th>
+				<td>
+					<select id="emp_badge_download_limit" name="emp_badge_download_limit">
+						<option value="multiple" <?php selected( $badge_download_limit, 'multiple' ); ?>><?php _e( 'Multiple Times (Default)', 'event-management-plugin' ); ?></option>
+						<option value="single" <?php selected( $badge_download_limit, 'single' ); ?>><?php _e( 'Single Time', 'event-management-plugin' ); ?></option>
+					</select>
+					<p class="description"><?php _e( 'Choose whether attendees can download their badge multiple times, or if they are blocked after the first download.', 'event-management-plugin' ); ?></p>
+				</td>
+			</tr>
+			<tr>
 				<th><label><?php _e( 'Badge Dimensions (mm)', 'event-management-plugin' ); ?></label></th>
 				<td>
 					<input type="number" step="0.1" name="emp_badge_width" value="<?php echo esc_attr( $badge_width ); ?>" placeholder="Width" style="width: 80px;" /> x 
@@ -101,7 +113,14 @@ class EMP_Event_Meta {
 			update_post_meta( $post_id, '_emp_badge_height', sanitize_text_field( $_POST['emp_badge_height'] ) );
 		}
 		
-		$require_payment = isset( $_POST['emp_require_payment'] ) ? '1' : '0';
-		update_post_meta( $post_id, '_emp_require_payment', $require_payment );
+		if ( isset( $_POST['emp_require_payment'] ) ) {
+			update_post_meta( $post_id, '_emp_require_payment', '1' );
+		} else {
+			delete_post_meta( $post_id, '_emp_require_payment' );
+		}
+
+		if ( isset( $_POST['emp_badge_download_limit'] ) ) {
+			update_post_meta( $post_id, '_emp_badge_download_limit', sanitize_text_field( $_POST['emp_badge_download_limit'] ) );
+		}
 	}
 }

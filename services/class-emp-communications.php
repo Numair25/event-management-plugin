@@ -44,15 +44,42 @@ class EMP_Communications {
 	public function get_whatsapp_link( $attendee_id ) {
 		global $wpdb;
 		$table_attendees = $wpdb->prefix . 'emp_attendees';
-		$attendee = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_attendees WHERE id = %d", $attendee_id ) );
 		
-		if ( ! $attendee ) return '';
+		// Fetch attendee details including phone and event ID
+		$attendee = $wpdb->get_row( $wpdb->prepare( "SELECT name, phone, event_id, qr_token FROM {$table_attendees} WHERE id = %d", $attendee_id ) );
+		
+		if ( ! $attendee ) {
+			return '';
+		}
 
 		$event_title = get_the_title( $attendee->event_id );
-		$badge_link = $this->get_badge_link( $attendee->id );
+		$event_date = get_post_meta( $attendee->event_id, '_emp_start_date', true );
+		$event_location = get_post_meta( $attendee->event_id, '_emp_location', true );
+		$badge_link = site_url( '?emp_download_badge=' . $attendee->qr_token );
 		
-		$text = sprintf( "Hi %s, here is your badge for %s:\n%s", $attendee->name, $event_title, $badge_link );
-		return 'https://wa.me/?text=' . rawurlencode( $text );
+		// Build detailed message
+		$text = sprintf( "Hi %s,\n\nHere is your badge for %s.", $attendee->name, $event_title );
+		
+		if ( $event_date ) {
+			$text .= "\nDate: " . date( 'F j, Y, g:i a', strtotime( $event_date ) );
+		}
+		if ( $event_location ) {
+			$text .= "\nLocation: " . $event_location;
+		}
+		
+		$text .= "\n\nDownload Badge: " . $badge_link;
+
+		// Clean phone number (strip everything except digits and plus sign)
+		$phone = '';
+		if ( ! empty( $attendee->phone ) ) {
+			$phone = preg_replace( '/[^0-9\+]/', '', $attendee->phone );
+		}
+
+		if ( ! empty( $phone ) ) {
+			return 'https://wa.me/' . $phone . '?text=' . rawurlencode( $text );
+		} else {
+			return 'https://wa.me/?text=' . rawurlencode( $text );
+		}
 	}
 
 	public function get_badge_link( $attendee_id ) {
@@ -108,11 +135,14 @@ class EMP_Communications {
 
 			global $wpdb;
 			$table_attendees = $wpdb->prefix . 'emp_attendees';
-			$attendee = $wpdb->get_row( $wpdb->prepare( "SELECT id, printed_status FROM {$table_attendees} WHERE qr_token = %s", $token ) );
+			$attendee = $wpdb->get_row( $wpdb->prepare( "SELECT id, event_id, printed_status FROM {$table_attendees} WHERE qr_token = %s", $token ) );
 			
 			if ( $attendee ) {
+				$limit = get_post_meta( $attendee->event_id, '_emp_badge_download_limit', true );
+				if ( empty( $limit ) ) $limit = 'multiple';
+
 				// Single download restriction
-				if ( $attendee->printed_status == 1 ) {
+				if ( $limit === 'single' && $attendee->printed_status == 1 ) {
 					wp_die( __( 'This badge has already been downloaded. You can only download your badge once.', 'event-management-plugin' ) );
 				}
 				// Mark as downloaded
