@@ -98,6 +98,14 @@ class EMP_Core {
 		$this->loader->add_action( 'admin_menu', $plugin_settings_admin, 'register_menu' );
 		$this->loader->add_action( 'wp_ajax_emp_global_search', $plugin_settings_admin, 'ajax_global_search' );
 
+		require_once EMP_PLUGIN_DIR . 'admin/class-emp-qr-settings-admin.php';
+		$plugin_qr_settings_admin = new EMP_QR_Settings_Admin();
+		$this->loader->add_action( 'admin_menu', $plugin_qr_settings_admin, 'register_menu' );
+
+		require_once EMP_PLUGIN_DIR . 'admin/class-emp-qr-approvals-admin.php';
+		$plugin_qr_approvals_admin = new EMP_QR_Approvals_Admin();
+		$this->loader->add_action( 'admin_menu', $plugin_qr_approvals_admin, 'register_menu' );
+
 		require_once EMP_PLUGIN_DIR . 'services/class-emp-gf-integration.php';
 		$plugin_gf_integration = new EMP_GF_Integration();
 		$this->loader->add_action( 'gform_loaded', $plugin_gf_integration, 'init' );
@@ -123,6 +131,17 @@ class EMP_Core {
 		require_once EMP_PLUGIN_DIR . 'api/class-emp-rest-scanner.php';
 		$plugin_rest_scanner = new EMP_REST_Scanner();
 		$this->loader->add_action( 'rest_api_init', $plugin_rest_scanner, 'register_endpoints' );
+
+		// QR Frontend Script Loader
+		require_once EMP_PLUGIN_DIR . 'public/class-emp-qr-frontend.php';
+		$plugin_qr_frontend = new EMP_QR_Frontend();
+		$this->loader->add_action( 'gform_enqueue_scripts', $plugin_qr_frontend, 'enqueue_assets', 10, 2 );
+
+		// QR Screenshot AJAX Upload Handler
+		require_once EMP_PLUGIN_DIR . 'services/class-emp-qr-upload-handler.php';
+		$plugin_qr_upload_handler = new EMP_QR_Upload_Handler();
+		$this->loader->add_action( 'wp_ajax_nopriv_emp_upload_qr_screenshot', $plugin_qr_upload_handler, 'handle_screenshot_upload' );
+		$this->loader->add_action( 'wp_ajax_emp_upload_qr_screenshot', $plugin_qr_upload_handler, 'handle_screenshot_upload' );
 		
 		$this->loader->add_action( 'admin_init', $this, 'ensure_pages_exist' );
 	}

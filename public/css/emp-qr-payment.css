@@ -1,0 +1,130 @@
+/* QR Payment Modal Styling */
+.emp-qr-modal-overlay {
+    position: fixed;
+    z-index: 999999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.emp-qr-modal-content {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 460px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    position: relative;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+.emp-qr-modal-close {
+    position: absolute;
+    right: 20px;
+    top: 15px;
+    font-size: 28px;
+    font-weight: bold;
+    color: #aaaaaa;
+    cursor: pointer;
+    line-height: 1;
+}
+.emp-qr-modal-close:hover {
+    color: #333333;
+}
+.emp-qr-modal-content h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 20px;
+    color: #2c3338;
+}
+.emp-qr-image-container {
+    text-align: center;
+    margin: 20px 0;
+}
+.emp-qr-image {
+    max-width: 200px;
+    height: auto;
+    border: 1px solid #dddddd;
+    padding: 5px;
+    background: #ffffff;
+}
+.emp-qr-field-group {
+    margin-bottom: 18px;
+    text-align: left;
+}
+.emp-qr-field-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 14px;
+    color: #3c434a;
+}
+.emp-qr-field-group input[type="text"],
+.emp-qr-field-group input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 14px;
+}
+.emp-qr-field-group input[type="text"]:focus {
+    border-color: #2271b1;
+    outline: none;
+}
+.emp-qr-action-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 25px;
+}
+.emp-qr-btn-submit {
+    background-color: #2271b1;
+    color: #ffffff;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+.emp-qr-btn-submit:hover {
+    background-color: #135e96;
+}
+.emp-qr-btn-cancel {
+    background-color: #ffffff;
+    color: #2271b1;
+    border: 1px solid #2271b1;
+    padding: 12px 20px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+.emp-qr-btn-cancel:hover {
+    background-color: #f0f0f1;
+}
+.emp-qr-upload-progress {
+    width: 100%;
+    background-color: #f0f0f1;
+    border-radius: 4px;
+    height: 8px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+.emp-qr-progress-bar {
+    height: 100%;
+    width: 0%;
+    background-color: #2271b1;
+    transition: width 0.1s ease;
+}
+.emp-qr-field-group label .required {
+    color: #d63638;
+}

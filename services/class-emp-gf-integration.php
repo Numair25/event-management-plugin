@@ -24,6 +24,9 @@ class EMP_GF_Integration {
 		// Auto-create attendee if form is linked directly to an event (no feed required)
 		add_action( 'gform_entry_post_save', array( $this, 'auto_create_attendee_for_linked_form' ), 5, 2 );
 		add_action( 'gform_pre_submission', array( $this, 'clear_attendee_cache' ) );
+		
+		// Intercept QR custom payment fields
+		add_filter( 'gform_entry_created', array( $this, 'intercept_qr_submission' ), 10, 2 );
 
 		// Currency settings
 		add_filter( 'gform_currencies', array( $this, 'add_inr_currency' ) );
@@ -40,6 +43,29 @@ class EMP_GF_Integration {
 
 	public function clear_attendee_cache() {
 		self::$last_attendee_ids = array();
+	}
+	
+	public function intercept_qr_submission( $entry, $form ) {
+		if ( isset( $_POST['emp_qr_transaction_id'] ) && ! empty( $_POST['emp_qr_transaction_id'] ) ) {
+			$entry['payment_status'] = 'Pending';
+			
+			// Get amount from settings
+			$settings = get_option( 'emp_qr_payment_settings', array() );
+			$form_id = intval( $form['id'] );
+			if ( isset( $settings[ $form_id ] ) && ! empty( $settings[ $form_id ]['amount'] ) ) {
+				$entry['payment_amount'] = floatval( $settings[ $form_id ]['amount'] );
+			}
+			
+			GFAPI::update_entry( $entry );
+			
+			gform_update_meta( $entry['id'], 'emp_qr_transaction_id', sanitize_text_field( $_POST['emp_qr_transaction_id'] ) );
+			if ( isset( $_POST['emp_qr_screenshot_url'] ) ) {
+				gform_update_meta( $entry['id'], 'emp_qr_screenshot_url', esc_url_raw( $_POST['emp_qr_screenshot_url'] ) );
+			}
+			
+			GFAPI::add_note( $entry['id'], 0, 'Event Management', 'QR Payment intercepted. Waiting for manual approval.' );
+		}
+		return $entry;
 	}
 
 	public function validate_duplicate_attendee( $validation_result ) {
@@ -150,9 +176,18 @@ class EMP_GF_Integration {
 			return $entry; // Not linked to any event directly
 		}
 		
+		$payment_status = isset( $entry['payment_status'] ) ? strtolower( $entry['payment_status'] ) : '';
+		
+		// If it's a QR payment that is pending, always delay attendee creation
+		if ( $payment_status === 'pending' ) {
+			$is_qr = gform_get_meta( $entry['id'], 'emp_qr_transaction_id' );
+			if ( $is_qr ) {
+				return $entry;
+			}
+		}
+
 		$require_payment = get_post_meta( $event_id, '_emp_require_payment', true );
 		if ( $require_payment ) {
-			$payment_status = isset( $entry['payment_status'] ) ? strtolower( $entry['payment_status'] ) : '';
 			if ( ! in_array( $payment_status, array( 'paid', 'approved', 'active' ) ) ) {
 				// Skip creation now. It will be created by handle_payment_action when payment completes.
 				return $entry;
