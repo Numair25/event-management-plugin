@@ -220,7 +220,7 @@ class EMP_Badge_Generator {
 			$qr_h = isset( $design['qr_h'] ) ? $design['qr_h'] : 30;
 
 			$html .= '<div style="position: absolute; left: ' . $qr_x . 'mm; top: ' . $qr_y . 'mm; width: ' . $qr_w . 'mm; height: ' . $qr_h . 'mm; z-index: 2;">';
-			$html .= '<img src="' . $qr_base64 . '" style="width: 100%; height: 100%; background-color: #fff; margin: 0; padding: 0; display: block;" />';
+			$html .= '<img src="' . $qr_base64 . '" width="' . $qr_w . '" height="' . $qr_h . '" style="width: ' . $qr_w . 'mm; height: ' . $qr_h . 'mm; background-color: #fff; margin: 0; padding: 0; display: block;" />';
 			$html .= '</div>';
 
 			$mpdf->WriteHTML( $html );
