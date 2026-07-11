@@ -69,6 +69,26 @@ class EMP_Attendees_Admin {
 				} else {
 					echo '<div class="error"><p>' . __( 'You do not have permission to manage finances.', 'event-management-plugin' ) . '</p></div>';
 				}
+			} elseif ( $_GET['action'] == 'delete' ) {
+				check_admin_referer( 'delete_' . $id );
+				if ( current_user_can( 'manage_attendees' ) ) {
+					// Delete related records
+					$wpdb->delete( $wpdb->prefix . 'emp_scan_logs', array( 'attendee_id' => $id ) );
+					$wpdb->delete( $wpdb->prefix . 'emp_payments', array( 'attendee_id' => $id ) );
+					$wpdb->delete( $wpdb->prefix . 'emp_communications', array( 'attendee_id' => $id ) );
+					$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->prefix}emp_audit_logs WHERE target = %s OR summary LIKE %s", 'Attendee', '%Attendee ID ' . $id . '%' ) );
+					
+					// Delete the attendee
+					$wpdb->delete( $table_name, array( 'id' => $id ) );
+					
+					echo '<div class="updated"><p>' . __( 'Attendee permanently deleted.', 'event-management-plugin' ) . '</p></div>';
+					
+					if ( class_exists( 'EMP_Audit_Logger' ) ) {
+						EMP_Audit_Logger::log( 'delete_attendee', "Attendee ID: $id", "Manually deleted attendee and related records" );
+					}
+				} else {
+					echo '<div class="error"><p>' . __( 'You do not have permission to delete attendees.', 'event-management-plugin' ) . '</p></div>';
+				}
 			}
 		}
 
@@ -127,7 +147,12 @@ class EMP_Attendees_Admin {
 				
 				if ( $row->status !== 'cancelled' && $row->status !== 'waitlisted' && $row->payment_status !== 'refunded' ) {
 					$print_url = admin_url( 'admin.php?emp_action=print_badge&attendee_id=' . $row->id );
-					echo '<a href="' . esc_url( $print_url ) . '" class="button button-small button-primary">' . __( 'Print Badge', 'event-management-plugin' ) . '</a>';
+					echo '<a href="' . esc_url( $print_url ) . '" class="button button-small button-primary">' . __( 'Print Badge', 'event-management-plugin' ) . '</a> ';
+				}
+				
+				if ( current_user_can( 'manage_attendees' ) ) {
+					$delete_url = wp_nonce_url( "?post_type=emp_event&page=emp-attendees&action=delete&id={$row->id}", 'delete_' . $row->id );
+					echo '<a href="' . esc_url( $delete_url ) . '" class="button button-small" style="color:#b32d2e; border-color:#b32d2e;" onclick="return confirm(\'Are you sure you want to permanently delete this attendee? This action cannot be undone.\');">' . __( 'Delete', 'event-management-plugin' ) . '</a>';
 				}
 				
 				echo '</td>';
