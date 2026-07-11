@@ -103,14 +103,111 @@ class EMP_Attendees_Admin {
 		$per_page = 20;
 		$offset = ( $page - 1 ) * $per_page;
 		
-		$total_items = $wpdb->get_var( "SELECT COUNT(*) FROM $table_name" );
-		$results = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $table_name ORDER BY created_at DESC LIMIT %d OFFSET %d", $per_page, $offset ) );
+		$where = array("1=1");
+		$args = array();
+
+		// Event Filter
+		if ( ! empty( $_GET['filter_event'] ) ) {
+			$where[] = "event_id = %d";
+			$args[] = intval( $_GET['filter_event'] );
+		}
+		
+		// Status Filter
+		if ( ! empty( $_GET['filter_status'] ) ) {
+			$where[] = "status = %s";
+			$args[] = sanitize_text_field( $_GET['filter_status'] );
+		}
+
+		// Payment Status Filter
+		if ( ! empty( $_GET['filter_payment'] ) ) {
+			$where[] = "payment_status = %s";
+			$args[] = sanitize_text_field( $_GET['filter_payment'] );
+		}
+
+		// Date Registered Filter
+		if ( ! empty( $_GET['filter_date'] ) ) {
+			$date = sanitize_text_field( $_GET['filter_date'] );
+			$where[] = "DATE(created_at) = %s";
+			$args[] = $date;
+		}
+
+		// Search
+		if ( ! empty( $_GET['s'] ) ) {
+			$search = '%' . $wpdb->esc_like( sanitize_text_field( $_GET['s'] ) ) . '%';
+			$where[] = "(name LIKE %s OR email LIKE %s OR phone LIKE %s)";
+			$args[] = $search;
+			$args[] = $search;
+			$args[] = $search;
+		}
+
+		$where_sql = implode( ' AND ', $where );
+		
+		if ( ! empty( $args ) ) {
+			$total_items = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM $table_name WHERE $where_sql", $args ) );
+			$query_args = array_merge( $args, array( $per_page, $offset ) );
+			$results = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $table_name WHERE $where_sql ORDER BY created_at DESC LIMIT %d OFFSET %d", $query_args ) );
+		} else {
+			$total_items = $wpdb->get_var( "SELECT COUNT(*) FROM $table_name" );
+			$results = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $table_name ORDER BY created_at DESC LIMIT %d OFFSET %d", $per_page, $offset ) );
+		}
 		
 		$total_pages = ceil( $total_items / $per_page );
+		
+		// Fetch active events for dropdown
+		$events = get_posts( array( 'post_type' => 'emp_event', 'numberposts' => -1, 'post_status' => 'any' ) );
 		
 		echo '<div class="wrap">';
 		echo '<h1 class="wp-heading-inline">' . __( 'Attendees', 'event-management-plugin' ) . '</h1>';
 		echo '<hr class="wp-header-end">';
+		
+		// Render Filter Form
+		$current_event = isset($_GET['filter_event']) ? $_GET['filter_event'] : '';
+		$current_status = isset($_GET['filter_status']) ? $_GET['filter_status'] : '';
+		$current_payment = isset($_GET['filter_payment']) ? $_GET['filter_payment'] : '';
+		$current_date = isset($_GET['filter_date']) ? $_GET['filter_date'] : '';
+		$current_search = isset($_GET['s']) ? $_GET['s'] : '';
+		
+		echo '<form method="get" style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">';
+		echo '<input type="hidden" name="post_type" value="emp_event">';
+		echo '<input type="hidden" name="page" value="emp-attendees">';
+		
+		// Search
+		echo '<input type="text" name="s" placeholder="' . esc_attr__( 'Search name, email, phone...', 'event-management-plugin' ) . '" value="' . esc_attr($current_search) . '">';
+		
+		// Event Dropdown
+		echo '<select name="filter_event">';
+		echo '<option value="">' . __( 'All Events', 'event-management-plugin' ) . '</option>';
+		foreach ( $events as $ev ) {
+			echo '<option value="' . esc_attr($ev->ID) . '" ' . selected($current_event, $ev->ID, false) . '>' . esc_html($ev->post_title) . '</option>';
+		}
+		echo '</select>';
+		
+		// Status Dropdown
+		echo '<select name="filter_status">';
+		echo '<option value="">' . __( 'All Statuses', 'event-management-plugin' ) . '</option>';
+		echo '<option value="registered" ' . selected($current_status, 'registered', false) . '>' . __( 'Registered', 'event-management-plugin' ) . '</option>';
+		echo '<option value="checked-in" ' . selected($current_status, 'checked-in', false) . '>' . __( 'Checked-In', 'event-management-plugin' ) . '</option>';
+		echo '<option value="waitlisted" ' . selected($current_status, 'waitlisted', false) . '>' . __( 'Waitlisted', 'event-management-plugin' ) . '</option>';
+		echo '<option value="cancelled" ' . selected($current_status, 'cancelled', false) . '>' . __( 'Cancelled', 'event-management-plugin' ) . '</option>';
+		echo '</select>';
+		
+		// Payment Status
+		echo '<select name="filter_payment">';
+		echo '<option value="">' . __( 'All Payments', 'event-management-plugin' ) . '</option>';
+		echo '<option value="paid" ' . selected($current_payment, 'paid', false) . '>' . __( 'Paid', 'event-management-plugin' ) . '</option>';
+		echo '<option value="comp" ' . selected($current_payment, 'comp', false) . '>' . __( 'Comp', 'event-management-plugin' ) . '</option>';
+		echo '<option value="pending" ' . selected($current_payment, 'pending', false) . '>' . __( 'Pending', 'event-management-plugin' ) . '</option>';
+		echo '<option value="refunded" ' . selected($current_payment, 'refunded', false) . '>' . __( 'Refunded', 'event-management-plugin' ) . '</option>';
+		echo '</select>';
+		
+		// Date
+		echo '<input type="date" name="filter_date" value="' . esc_attr($current_date) . '">';
+		
+		echo '<input type="submit" class="button" value="' . __( 'Filter', 'event-management-plugin' ) . '">';
+		if ( !empty($current_event) || !empty($current_status) || !empty($current_payment) || !empty($current_date) || !empty($current_search) ) {
+			echo '<a href="?post_type=emp_event&page=emp-attendees" class="button">' . __( 'Clear', 'event-management-plugin' ) . '</a>';
+		}
+		echo '</form>';
 		
 		echo '<table class="wp-list-table widefat fixed striped">';
 		echo '<thead><tr>';
