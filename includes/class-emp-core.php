@@ -47,6 +47,7 @@ class EMP_Core {
 		require_once EMP_PLUGIN_DIR . 'admin/class-emp-attendees-admin.php';
 		$plugin_attendees_admin = new EMP_Attendees_Admin();
 		$this->loader->add_action( 'admin_menu', $plugin_attendees_admin, 'register_menu' );
+		$this->loader->add_action( 'admin_post_emp_export_attendees', $plugin_attendees_admin, 'export_csv' );
 
 		require_once EMP_PLUGIN_DIR . 'admin/class-emp-get-started-admin.php';
 		$plugin_get_started = new EMP_Get_Started_Admin();

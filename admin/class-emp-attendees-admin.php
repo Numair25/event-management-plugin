@@ -15,6 +15,84 @@ class EMP_Attendees_Admin {
 		);
 	}
 
+	public function export_csv() {
+		if ( ! current_user_can( 'manage_attendees' ) ) {
+			wp_die( __( 'You do not have permission to export attendees.', 'event-management-plugin' ) );
+		}
+
+		$event_id = isset( $_POST['export_event_id'] ) ? intval( $_POST['export_event_id'] ) : 0;
+		if ( ! $event_id ) {
+			wp_die( __( 'Please select an event to export.', 'event-management-plugin' ) );
+		}
+
+		$event_title = get_the_title( $event_id );
+		if ( ! $event_title ) {
+			wp_die( __( 'Invalid event selected.', 'event-management-plugin' ) );
+		}
+
+		global $wpdb;
+		$table_name = $wpdb->prefix . 'emp_attendees';
+		
+		// Get all attendees for this event
+		$attendees = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM $table_name WHERE event_id = %d ORDER BY created_at DESC", $event_id ) );
+
+		// Clean output buffer
+		if ( ob_get_length() ) {
+			ob_end_clean();
+		}
+
+		$filename = 'attendees-' . sanitize_title( $event_title ) . '-' . date('Y-m-d') . '.csv';
+
+		header( 'Content-Type: text/csv; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+		header( 'Pragma: no-cache' );
+		header( 'Expires: 0' );
+
+		$output = fopen( 'php://output', 'w' );
+		
+		// Add BOM to fix UTF-8 in Excel
+		fputs( $output, $bom =( chr(0xEF) . chr(0xBB) . chr(0xBF) ) );
+
+		// Headers
+		fputcsv( $output, array( 
+			'ID', 
+			'Name', 
+			'Email', 
+			'Phone', 
+			'Organization', 
+			'Ticket Type ID', 
+			'Status', 
+			'Payment Status', 
+			'Source', 
+			'Registration Date' 
+		) );
+
+		if ( $attendees ) {
+			foreach ( $attendees as $att ) {
+				fputcsv( $output, array(
+					$att->id,
+					$att->name,
+					$att->email,
+					$att->phone,
+					$att->organization,
+					$att->ticket_type_id,
+					ucfirst( $att->status ),
+					ucfirst( $att->payment_status ),
+					ucfirst( $att->source ),
+					$att->created_at
+				) );
+			}
+		}
+
+		fclose( $output );
+		
+		if ( class_exists( 'EMP_Audit_Logger' ) ) {
+			EMP_Audit_Logger::log( 'export_attendees', "Event ID: $event_id", "Exported attendees list to CSV" );
+		}
+
+		exit;
+	}
+
 	public function render_page() {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'emp_attendees';
@@ -207,6 +285,18 @@ class EMP_Attendees_Admin {
 		if ( !empty($current_event) || !empty($current_status) || !empty($current_payment) || !empty($current_date) || !empty($current_search) ) {
 			echo '<a href="?post_type=emp_event&page=emp-attendees" class="button">' . __( 'Clear', 'event-management-plugin' ) . '</a>';
 		}
+		echo '</form>';
+		
+		// Export CSV Form
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">';
+		echo '<input type="hidden" name="action" value="emp_export_attendees">';
+		echo '<select name="export_event_id" required>';
+		echo '<option value="">' . __( 'Select Event to Export...', 'event-management-plugin' ) . '</option>';
+		foreach ( $events as $ev ) {
+			echo '<option value="' . esc_attr($ev->ID) . '">' . esc_html($ev->post_title) . '</option>';
+		}
+		echo '</select>';
+		echo '<button type="submit" class="button button-primary">' . __( 'Export CSV', 'event-management-plugin' ) . '</button>';
 		echo '</form>';
 		
 		echo '<table class="wp-list-table widefat fixed striped">';
