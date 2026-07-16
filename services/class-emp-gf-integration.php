@@ -117,26 +117,46 @@ class EMP_GF_Integration {
 			}
 		}
 
-		// Only check duplicate if email is structurally valid
-		if ( $email_field && ! empty( $email_value ) && ! $email_field->failed_validation ) {
-			// Check GF for existing entry with this email in this form
-			$search_criteria = array(
-				'status' => 'active',
-				'field_filters' => array(
-					array(
-						'key' => strval( $email_field->id ),
-						'value' => $email_value,
-						'operator' => 'is'
-					)
-				)
-			);
-			
-			$entries = GFAPI::get_entries( $form['id'], $search_criteria, null, array( 'offset' => 0, 'page_size' => 1 ) );
+		// Load Unique Validation Rules
+		$rules = get_option( 'emp_gf_unique_validation_rules', array() );
+		$current_rule = isset( $rules[ $form['id'] ] ) ? $rules[ $form['id'] ] : array( 'enabled' => 0, 'field_id' => '' );
 
-			if ( ! is_wp_error( $entries ) && ! empty( $entries ) ) {
-				$validation_result['is_valid'] = false;
-				$email_field->failed_validation = true;
-				$email_field->validation_message = __( 'This email is already registered for this event.', 'event-management-plugin' );
+		if ( ! empty( $current_rule['enabled'] ) && ! empty( $current_rule['field_id'] ) ) {
+			$unique_field_id = $current_rule['field_id'];
+			
+			// Find the field in the form object to attach validation errors
+			$target_field = null;
+			foreach ( $form['fields'] as &$field ) {
+				if ( strval( $field->id ) === strval( $unique_field_id ) ) {
+					$target_field = &$field; // Pass by reference so we can update validation_message
+					break;
+				}
+			}
+
+			if ( $target_field ) {
+				$unique_val = rgpost( 'input_' . str_replace( '.', '_', $unique_field_id ) );
+				
+				// Only check duplicate if it has a value and hasn't failed basic formatting validation
+				if ( ! empty( $unique_val ) && ! $target_field->failed_validation ) {
+					$search_criteria = array(
+						'status' => 'active',
+						'field_filters' => array(
+							array(
+								'key' => strval( $unique_field_id ),
+								'value' => $unique_val,
+								'operator' => 'is'
+							)
+						)
+					);
+					
+					$entries = GFAPI::get_entries( $form['id'], $search_criteria, null, array( 'offset' => 0, 'page_size' => 1 ) );
+
+					if ( ! is_wp_error( $entries ) && ! empty( $entries ) ) {
+						$validation_result['is_valid'] = false;
+						$target_field->failed_validation = true;
+						$target_field->validation_message = __( 'This value is already registered for this event.', 'event-management-plugin' );
+					}
+				}
 			}
 		}
 

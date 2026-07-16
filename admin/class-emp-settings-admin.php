@@ -126,9 +126,25 @@ class EMP_Settings_Admin {
 			wp_die( __( 'You do not have sufficient permissions to access this page.', 'event-management-plugin' ) );
 		}
 
+		$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( $_GET['tab'] ) : 'general';
+
 		if ( isset( $_POST['emp_save_settings'] ) && check_admin_referer( 'emp_save_settings_action', 'emp_save_settings_nonce' ) ) {
-			$force_inr = isset( $_POST['emp_gf_force_inr'] ) ? 1 : 0;
-			update_option( 'emp_gf_force_inr', $force_inr );
+			if ( $active_tab == 'general' ) {
+				$force_inr = isset( $_POST['emp_gf_force_inr'] ) ? 1 : 0;
+				update_option( 'emp_gf_force_inr', $force_inr );
+			} elseif ( $active_tab == 'validation' ) {
+				$rules = get_option( 'emp_gf_unique_validation_rules', array() );
+				$form_id = intval( $_POST['validation_form_id'] );
+				if ( $form_id ) {
+					$enabled = isset( $_POST['emp_validation_enabled'] ) ? 1 : 0;
+					$field_id = sanitize_text_field( $_POST['emp_validation_field_id'] );
+					$rules[ $form_id ] = array(
+						'enabled' => $enabled,
+						'field_id' => $field_id
+					);
+					update_option( 'emp_gf_unique_validation_rules', $rules );
+				}
+			}
 			echo '<div class="notice notice-success is-dismissible"><p>' . __( 'Settings saved successfully.', 'event-management-plugin' ) . '</p></div>';
 		}
 
@@ -136,6 +152,13 @@ class EMP_Settings_Admin {
 		?>
 		<div class="wrap">
 			<h1><?php _e( 'Event Management Settings', 'event-management-plugin' ); ?></h1>
+			
+			<h2 class="nav-tab-wrapper">
+				<a href="?post_type=emp_event&page=emp-settings&tab=general" class="nav-tab <?php echo $active_tab == 'general' ? 'nav-tab-active' : ''; ?>"><?php _e( 'General', 'event-management-plugin' ); ?></a>
+				<a href="?post_type=emp_event&page=emp-settings&tab=validation" class="nav-tab <?php echo $active_tab == 'validation' ? 'nav-tab-active' : ''; ?>"><?php _e( 'Form Validation', 'event-management-plugin' ); ?></a>
+			</h2>
+			
+			<?php if ( $active_tab == 'general' ) : ?>
 			
 			<!-- Global Search UI -->
 			<div style="background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #ccd0d4; box-shadow: 0 1px 1px rgba(0,0,0,0.04); margin-bottom: 30px; margin-top: 20px;">
@@ -221,6 +244,63 @@ class EMP_Settings_Admin {
 				
 				<?php submit_button(); ?>
 			</form>
+			<?php elseif ( $active_tab == 'validation' ) : 
+				$forms = class_exists( 'GFAPI' ) ? GFAPI::get_forms() : array();
+				$selected_form_id = isset( $_GET['form_id'] ) ? intval( $_GET['form_id'] ) : ( !empty($forms) ? $forms[0]['id'] : 0 );
+				$rules = get_option( 'emp_gf_unique_validation_rules', array() );
+				$current_rule = isset( $rules[ $selected_form_id ] ) ? $rules[ $selected_form_id ] : array( 'enabled' => 0, 'field_id' => '' );
+			?>
+			<form method="post" action="">
+				<?php wp_nonce_field( 'emp_save_settings_action', 'emp_save_settings_nonce' ); ?>
+				<input type="hidden" name="emp_save_settings" value="1" />
+				
+				<table class="form-table">
+					<tr>
+						<th scope="row"><?php _e( 'Select Gravity Form', 'event-management-plugin' ); ?></th>
+						<td>
+							<select id="emp_validation_form_select" name="validation_form_id">
+								<?php foreach ( $forms as $form ) : ?>
+									<option value="<?php echo esc_attr( $form['id'] ); ?>" <?php selected( $selected_form_id, $form['id'] ); ?>><?php echo esc_html( $form['title'] ); ?></option>
+								<?php endforeach; ?>
+							</select>
+							<script>
+							jQuery('#emp_validation_form_select').change(function(){
+								window.location.href = '?post_type=emp_event&page=emp-settings&tab=validation&form_id=' + jQuery(this).val();
+							});
+							</script>
+						</td>
+					</tr>
+					<?php if ( $selected_form_id ) : 
+						$form = GFAPI::get_form( $selected_form_id );
+					?>
+					<tr>
+						<th scope="row"><?php _e( 'Unique Validation', 'event-management-plugin' ); ?></th>
+						<td>
+							<label>
+								<input type="checkbox" name="emp_validation_enabled" value="1" <?php checked( $current_rule['enabled'], 1 ); ?> />
+								<?php _e( 'Enable unique validation for this form', 'event-management-plugin' ); ?>
+							</label>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php _e( 'Unique Field', 'event-management-plugin' ); ?></th>
+						<td>
+							<select name="emp_validation_field_id">
+								<option value=""><?php _e( '-- Select Field --', 'event-management-plugin' ); ?></option>
+								<?php foreach ( $form['fields'] as $field ) : 
+									if ( in_array( $field->type, array( 'html', 'section', 'page' ) ) ) continue;
+								?>
+									<option value="<?php echo esc_attr( $field->id ); ?>" <?php selected( $current_rule['field_id'], $field->id ); ?>><?php echo esc_html( $field->label ); ?></option>
+								<?php endforeach; ?>
+							</select>
+							<p class="description"><?php _e( 'Select the field that must be unique (e.g., Email, Employee ID). If someone submits the form and this field matches an existing attendee in the system, it will be rejected.', 'event-management-plugin' ); ?></p>
+						</td>
+					</tr>
+					<?php endif; ?>
+				</table>
+				<?php submit_button(); ?>
+			</form>
+			<?php endif; ?>
 		</div>
 		<?php
 	}
