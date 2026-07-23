@@ -301,7 +301,7 @@ class EMP_Attendees_Admin {
 		
 		echo '<table class="wp-list-table widefat fixed striped">';
 		echo '<thead><tr>';
-		echo '<th>' . __( 'Name / Email', 'event-management-plugin' ) . '</th>';
+		echo '<th>' . __( 'Name / Contact', 'event-management-plugin' ) . '</th>';
 		echo '<th>' . __( 'Event', 'event-management-plugin' ) . '</th>';
 		echo '<th>' . __( 'Status', 'event-management-plugin' ) . '</th>';
 		echo '<th>' . __( 'Payment Status', 'event-management-plugin' ) . '</th>';
@@ -317,7 +317,11 @@ class EMP_Attendees_Admin {
 				$refund_url = wp_nonce_url( "?post_type=emp_event&page=emp-attendees&action=refund&id={$row->id}", 'refund_' . $row->id );
 				
 				echo '<tr>';
-				echo '<td><strong>' . esc_html( $row->name ) . '</strong><br/>' . esc_html( $row->email ) . '</td>';
+				echo '<td><strong>' . esc_html( $row->name ) . '</strong><br/>' . esc_html( $row->email );
+				if ( ! empty( $row->phone ) ) {
+					echo '<br/><span style="color: #666; font-size: 12px;">' . esc_html( $row->phone ) . '</span>';
+				}
+				echo '</td>';
 				echo '<td>' . esc_html( $event_title ) . '</td>';
 				echo '<td>' . esc_html( ucfirst( $row->status ) ) . '</td>';
 				echo '<td>' . esc_html( ucfirst( $row->payment_status ) ) . '</td>';
