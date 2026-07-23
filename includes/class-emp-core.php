@@ -145,11 +145,15 @@ class EMP_Core {
 		$this->loader->add_action( 'wp_ajax_emp_upload_qr_screenshot', $plugin_qr_upload_handler, 'handle_screenshot_upload' );
 		
 		$this->loader->add_action( 'admin_init', $this, 'ensure_pages_exist' );
-		$this->loader->add_action( 'admin_init', $this, 'retroactive_phone_sync' );
+		$this->loader->add_action( 'admin_post_emp_sync_phones', $this, 'retroactive_phone_sync' );
 	}
 	
 	public function retroactive_phone_sync() {
-		if ( isset( $_GET['emp_sync_phones'] ) && current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( "Unauthorized." );
+		}
+		
+		check_admin_referer( 'emp_sync_phones_action', 'emp_sync_phones_nonce' );
 			if ( ! class_exists( 'GFAPI' ) ) {
 				wp_die( "Gravity Forms not active." );
 			}
@@ -210,13 +214,12 @@ class EMP_Core {
 				if ( ! empty( $phone ) ) {
 					$wpdb->update( $table_attendees, array( 'phone' => $phone ), array( 'id' => $att->id ) );
 					$updated_count++;
-					echo "Synced phone {$phone} for {$email}<br>";
 				}
 			}
 
-			echo "Done! Updated {$updated_count} attendees.<br>";
-			wp_die();
-		}
+			$redirect_url = admin_url( 'edit.php?post_type=emp_event&page=emp-settings&tab=tools&sync_status=success&updated_count=' . $updated_count . '&total_missing=' . count($attendees) );
+			wp_safe_redirect( $redirect_url );
+			exit;
 	}
 	
 	public function ensure_pages_exist() {

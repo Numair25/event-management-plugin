@@ -156,6 +156,7 @@ class EMP_Settings_Admin {
 			<h2 class="nav-tab-wrapper">
 				<a href="?post_type=emp_event&page=emp-settings&tab=general" class="nav-tab <?php echo $active_tab == 'general' ? 'nav-tab-active' : ''; ?>"><?php _e( 'General', 'event-management-plugin' ); ?></a>
 				<a href="?post_type=emp_event&page=emp-settings&tab=validation" class="nav-tab <?php echo $active_tab == 'validation' ? 'nav-tab-active' : ''; ?>"><?php _e( 'Form Validation', 'event-management-plugin' ); ?></a>
+				<a href="?post_type=emp_event&page=emp-settings&tab=tools" class="nav-tab <?php echo $active_tab == 'tools' ? 'nav-tab-active' : ''; ?>"><?php _e( 'Tools', 'event-management-plugin' ); ?></a>
 			</h2>
 			
 			<?php if ( $active_tab == 'general' ) : ?>
@@ -300,6 +301,29 @@ class EMP_Settings_Admin {
 				</table>
 				<?php submit_button(); ?>
 			</form>
+			<?php elseif ( $active_tab == 'tools' ) : ?>
+			<div style="background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #ccd0d4; box-shadow: 0 1px 1px rgba(0,0,0,0.04); margin-bottom: 30px; margin-top: 20px;">
+				<h2 style="margin-top:0;"><?php _e( 'Sync Historical Data', 'event-management-plugin' ); ?></h2>
+				<p class="description"><?php _e( 'If you mapped new fields in your Gravity Forms Feed (like Phone Number) AFTER attendees had already registered, you can run this tool to securely fetch those missing details from Gravity Forms and sync them into the Attendees database.', 'event-management-plugin' ); ?></p>
+				
+				<?php
+				if ( isset( $_GET['sync_status'] ) && $_GET['sync_status'] === 'success' ) {
+					$updated_count = isset( $_GET['updated_count'] ) ? intval( $_GET['updated_count'] ) : 0;
+					$total_missing = isset( $_GET['total_missing'] ) ? intval( $_GET['total_missing'] ) : 0;
+					echo '<div class="notice notice-success inline" style="margin-top:15px; margin-bottom:15px;"><p>';
+					echo sprintf( __( 'Sync Complete! Found %1$d attendees missing data. Successfully updated %2$d attendees.', 'event-management-plugin' ), $total_missing, $updated_count );
+					echo '</p></div>';
+				}
+				?>
+				
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+					<?php wp_nonce_field( 'emp_sync_phones_action', 'emp_sync_phones_nonce' ); ?>
+					<input type="hidden" name="action" value="emp_sync_phones" />
+					<button type="submit" class="button button-primary" onclick="return confirm('<?php _e( 'Are you sure you want to run the retroactive sync?', 'event-management-plugin' ); ?>');">
+						<?php _e( 'Sync Missing Phone Numbers', 'event-management-plugin' ); ?>
+					</button>
+				</form>
+			</div>
 			<?php endif; ?>
 		</div>
 		<?php

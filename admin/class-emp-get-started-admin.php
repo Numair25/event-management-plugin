@@ -160,6 +160,19 @@ class EMP_Get_Started_Admin {
 						<li><strong>Registration Staff:</strong> Can access the Walk-In Kiosk to register attendees and print badges, but cannot see financial data or change settings.</li>
 						<li><strong>Scanning Staff:</strong> Can only access the Frontend QR Scanner to scan attendees at the door. They have no access to the WordPress admin area.</li>
 					</ul>
+					<div class="emp-step-card" style="margin-top: 20px;">
+						<div class="emp-step-number">6</div>
+						<div class="emp-step-content">
+							<h3>Advanced Features & Tools</h3>
+							<p>Don't forget to check out the <strong>Settings</strong> page! From there you can:</p>
+							<ul style="list-style-type: disc; padding-left: 20px;">
+								<li><strong>Global Search:</strong> Instantly search attendees, events, and ticket types.</li>
+								<li><strong>Form Validation:</strong> Enforce uniqueness on specific form fields (like preventing duplicate phone numbers).</li>
+								<li><strong>Historical Data Sync:</strong> Under the <em>Tools</em> tab, you can retroactively sync missing attendee data if you updated your Gravity Forms mapping after people had already registered.</li>
+							</ul>
+						</div>
+					</div>
+					<hr style="margin: 40px 0;">
 					<p style="margin-top: 15px; font-style: italic; color: #555;">
 						<strong>Login Details:</strong> All staff members can log into the system using the standard WordPress login page at: <br/>
 						<code><a href="<?php echo wp_login_url(); ?>" target="_blank"><?php echo wp_login_url(); ?></a></code>
