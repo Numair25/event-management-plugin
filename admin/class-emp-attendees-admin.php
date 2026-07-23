@@ -181,13 +181,18 @@ class EMP_Attendees_Admin {
 		$per_page = 20;
 		$offset = ( $page - 1 ) * $per_page;
 		
-		$where = array("1=1");
+		// If current_event is not explicitly set in $_GET, but events exist, set default to the first one for the query.
+		// We fetch events first.
+		$events = get_posts( array( 'post_type' => 'emp_event', 'numberposts' => -1, 'post_status' => 'any' ) );
+		$query_event_id = isset($_GET['filter_event']) ? $_GET['filter_event'] : ( !empty($events) ? $events[0]->ID : '' );
+		
+		$where = array();
 		$args = array();
-
-		// Event Filter
-		if ( ! empty( $_GET['filter_event'] ) ) {
+		
+		// Event Filter (now respects the default)
+		if ( $query_event_id !== '' && $query_event_id !== 'all' ) {
 			$where[] = "event_id = %d";
-			$args[] = intval( $_GET['filter_event'] );
+			$args[] = intval( $query_event_id );
 		}
 		
 		// Status Filter
@@ -240,6 +245,12 @@ class EMP_Attendees_Admin {
 		
 		// Render Filter Form
 		$current_event = isset($_GET['filter_event']) ? $_GET['filter_event'] : '';
+		
+		// By default, if no event is selected and events exist, show the most recent event
+		if ( $current_event === '' && ! empty( $events ) ) {
+			$current_event = $events[0]->ID;
+		}
+
 		$current_status = isset($_GET['filter_status']) ? $_GET['filter_status'] : '';
 		$current_payment = isset($_GET['filter_payment']) ? $_GET['filter_payment'] : '';
 		$current_date = isset($_GET['filter_date']) ? $_GET['filter_date'] : '';
@@ -254,7 +265,7 @@ class EMP_Attendees_Admin {
 		
 		// Event Dropdown
 		echo '<select name="filter_event">';
-		echo '<option value="">' . __( 'All Events', 'event-management-plugin' ) . '</option>';
+		echo '<option value="all">' . __( 'All Events', 'event-management-plugin' ) . '</option>';
 		foreach ( $events as $ev ) {
 			echo '<option value="' . esc_attr($ev->ID) . '" ' . selected($current_event, $ev->ID, false) . '>' . esc_html($ev->post_title) . '</option>';
 		}
