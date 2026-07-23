@@ -77,6 +77,7 @@ class EMP_QR_Approvals_Admin {
 				<thead>
 					<tr>
 						<th style="width: 80px;"><?php _e( 'Entry ID', 'event-management-plugin' ); ?></th>
+						<th><?php _e( 'Name / Contact', 'event-management-plugin' ); ?></th>
 						<th><?php _e( 'Form Title', 'event-management-plugin' ); ?></th>
 						<th><?php _e( 'Amount', 'event-management-plugin' ); ?></th>
 						<th><?php _e( 'Transaction ID', 'event-management-plugin' ); ?></th>
@@ -94,9 +95,45 @@ class EMP_QR_Approvals_Admin {
 							$form = GFAPI::get_form( $entry['form_id'] );
 							$tx_id = gform_get_meta( $entry['id'], 'emp_qr_transaction_id' );
 							$screenshot = gform_get_meta( $entry['id'], 'emp_qr_screenshot_url' );
+							
+							// Extract Name, Email, Phone
+							$name = '';
+							$email = '';
+							$phone = '';
+							if ( $form && isset( $form['fields'] ) ) {
+								foreach ( $form['fields'] as $field ) {
+									if ( $field->type == 'name' ) {
+										$first = rgar( $entry, $field->id . '.3' );
+										$last = rgar( $entry, $field->id . '.6' );
+										if ( ! empty( $first ) || ! empty( $last ) ) {
+											$name = trim( $first . ' ' . $last );
+										} elseif ( empty( $name ) ) {
+											$name = rgar( $entry, strval( $field->id ) );
+										}
+									} elseif ( $field->type == 'email' || stripos( $field->label, 'email' ) !== false ) {
+										if ( empty( $email ) ) $email = rgar( $entry, strval( $field->id ) );
+									} elseif ( $field->type == 'phone' || stripos( $field->label, 'phone' ) !== false || stripos( $field->label, 'whatsapp' ) !== false || stripos( $field->label, 'mobile' ) !== false ) {
+										if ( empty( $phone ) ) $phone = rgar( $entry, strval( $field->id ) );
+									}
+								}
+							}
+							
+							// Fallback if name is empty
+							if ( empty( $name ) ) {
+								$name = 'Attendee';
+							}
 						?>
 							<tr class="emp-qr-approval-row" data-form-id="<?php echo esc_attr( $entry['form_id'] ); ?>">
 								<td><code><?php echo esc_html( $entry['id'] ); ?></code></td>
+								<td>
+									<strong><?php echo esc_html( $name ); ?></strong><br>
+									<?php if ( ! empty( $email ) ) : ?>
+										<a href="mailto:<?php echo esc_attr( $email ); ?>" style="text-decoration:none; color:#555; font-size:12px;"><?php echo esc_html( $email ); ?></a><br>
+									<?php endif; ?>
+									<?php if ( ! empty( $phone ) ) : ?>
+										<span style="color:#555; font-size:12px;"><?php echo esc_html( $phone ); ?></span>
+									<?php endif; ?>
+								</td>
 								<td><strong><?php echo esc_html( isset( $form['title'] ) ? $form['title'] : 'Form ' . $entry['form_id'] ); ?></strong></td>
 								<td>₹<?php echo esc_html( isset( $entry['payment_amount'] ) ? $entry['payment_amount'] : '0.00' ); ?></td>
 								<td><code><?php echo esc_html( $tx_id ); ?></code></td>
