@@ -184,6 +184,11 @@ class EMP_Core {
 				
 				if ( ! $form_id ) continue;
 				
+				$selected_form_id = isset( $_POST['sync_form_id'] ) ? sanitize_text_field( $_POST['sync_form_id'] ) : 'all';
+				if ( $selected_form_id !== 'all' && $form_id != $selected_form_id ) {
+					continue;
+				}
+				
 				$entries = GFAPI::get_entries( $form_id, array( 'status' => 'active' ), null, array( 'offset' => 0, 'page_size' => 500 ) );
 				$phone = '';
 				

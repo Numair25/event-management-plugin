@@ -316,10 +316,24 @@ class EMP_Settings_Admin {
 				}
 				?>
 				
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="margin-top: 15px;">
 					<?php wp_nonce_field( 'emp_sync_phones_action', 'emp_sync_phones_nonce' ); ?>
 					<input type="hidden" name="action" value="emp_sync_phones" />
-					<button type="submit" class="button button-primary" onclick="return confirm('<?php _e( 'Are you sure you want to run the retroactive sync?', 'event-management-plugin' ); ?>');">
+					
+					<p>
+						<label for="emp_sync_form_id"><strong><?php _e( 'Select Form to Sync:', 'event-management-plugin' ); ?></strong></label><br/>
+						<select name="sync_form_id" id="emp_sync_form_id" style="margin-top: 5px; margin-bottom: 15px; min-width: 250px;">
+							<option value="all"><?php _e( '-- All Forms --', 'event-management-plugin' ); ?></option>
+							<?php 
+							$forms = class_exists( 'GFAPI' ) ? GFAPI::get_forms() : array();
+							foreach ( $forms as $form ) {
+								echo '<option value="' . esc_attr( $form['id'] ) . '">' . esc_html( $form['title'] ) . '</option>';
+							}
+							?>
+						</select>
+					</p>
+
+					<button type="submit" class="button button-primary" onclick="return confirm('<?php _e( 'Are you sure you want to run the retroactive sync for the selected form(s)?', 'event-management-plugin' ); ?>');">
 						<?php _e( 'Sync Missing Phone Numbers', 'event-management-plugin' ); ?>
 					</button>
 				</form>
