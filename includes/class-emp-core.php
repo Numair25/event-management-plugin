@@ -145,6 +145,78 @@ class EMP_Core {
 		$this->loader->add_action( 'wp_ajax_emp_upload_qr_screenshot', $plugin_qr_upload_handler, 'handle_screenshot_upload' );
 		
 		$this->loader->add_action( 'admin_init', $this, 'ensure_pages_exist' );
+		$this->loader->add_action( 'admin_init', $this, 'retroactive_phone_sync' );
+	}
+	
+	public function retroactive_phone_sync() {
+		if ( isset( $_GET['emp_sync_phones'] ) && current_user_can( 'manage_options' ) ) {
+			if ( ! class_exists( 'GFAPI' ) ) {
+				wp_die( "Gravity Forms not active." );
+			}
+
+			global $wpdb;
+			$table_attendees = $wpdb->prefix . 'emp_attendees';
+			$attendees = $wpdb->get_results( "SELECT * FROM $table_attendees WHERE phone IS NULL OR phone = ''" );
+			
+			echo "Found " . count($attendees) . " attendees missing phone numbers.<br>";
+			$updated_count = 0;
+
+			foreach ( $attendees as $att ) {
+				$event_id = $att->event_id;
+				$email = $att->email;
+				
+				$form_id = get_post_meta( $event_id, '_emp_gf_form_id', true );
+				if ( ! $form_id && class_exists( 'EMP_GF_Addon' ) ) {
+					// Fallback to searching feeds
+					$addon = EMP_GF_Addon::get_instance();
+					$feeds = $addon->get_active_feeds();
+					foreach ( $feeds as $feed ) {
+						if ( rgar( $feed['meta'], 'event_id' ) == $event_id ) {
+							$form_id = $feed['form_id'];
+							break;
+						}
+					}
+				}
+				
+				if ( ! $form_id ) continue;
+				
+				$entries = GFAPI::get_entries( $form_id, array( 'status' => 'active' ), null, array( 'offset' => 0, 'page_size' => 500 ) );
+				$phone = '';
+				
+				if ( ! is_wp_error( $entries ) && ! empty( $entries ) ) {
+					$form = GFAPI::get_form( $form_id );
+					$phone_field_id = null;
+					$email_field_id = null;
+					
+					foreach ( $form['fields'] as $field ) {
+						if ( $field->type === 'phone' || stripos( $field->label, 'phone' ) !== false || stripos( $field->label, 'whatsapp' ) !== false || stripos( $field->label, 'mobile' ) !== false ) {
+							$phone_field_id = strval( $field->id );
+						}
+						if ( $field->type === 'email' || stripos( $field->label, 'email' ) !== false ) {
+							$email_field_id = strval( $field->id );
+						}
+					}
+					
+					if ( $phone_field_id && $email_field_id ) {
+						foreach ( $entries as $entry ) {
+							if ( strtolower( trim( rgar( $entry, $email_field_id ) ) ) === strtolower( trim( $email ) ) ) {
+								$phone = rgar( $entry, $phone_field_id );
+								break;
+							}
+						}
+					}
+				}
+				
+				if ( ! empty( $phone ) ) {
+					$wpdb->update( $table_attendees, array( 'phone' => $phone ), array( 'id' => $att->id ) );
+					$updated_count++;
+					echo "Synced phone {$phone} for {$email}<br>";
+				}
+			}
+
+			echo "Done! Updated {$updated_count} attendees.<br>";
+			wp_die();
+		}
 	}
 	
 	public function ensure_pages_exist() {
